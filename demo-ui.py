@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.font as tkFont
-
-
+import sys
+from random import random
 
 class App:
 	def __init__(self, master):
@@ -13,8 +13,8 @@ class App:
 
 		self.save_button = tk.Button(self.frame, text='Save to File', command=self.save_maze)
 		self.load_button = tk.Button(self.frame, text='Load from File', command=self.load_maze)
-		self.generate_button = tk.Button(self.frame, text='Generate Maze', command=self.load_maze)
-		self.display_button = tk.Button(self.frame, text='Display Maze', command=self.load_maze)
+		self.generate_button = tk.Button(self.frame, text='Generate Maze', command=self.generate_maze)
+		self.display_button = tk.Button(self.frame, text='Display Maze', command=self.display_maze)
 		self.gen_and_display_button = tk.Button(self.frame, text='Gen & Display Maze', command=self.gen_and_display_maze)
 
 		self.save_button.config(height=1, width=button_width) # h and w are in characters.
@@ -67,16 +67,67 @@ class App:
 		pass
 
 	def generate_maze(self):
-		maze_size = int(self.maze_size_entry.get()) # maze size in length of a side.
-		pass
+		maze_size = int(self.maze_size_entry.get()) % 1000 # maze size in length of a side.
+		self.maze = Maze(maze_size) # default maze with a standard border
 
 	def display_maze(self):
 		# Use a tk.Canvas object.
-		pass
+		if self.maze is None:
+			print('Cannot display a maze that does not exist.')
+			return
+
+		#print(self.maze) # A debug statement.
+		#return
+
+
+		window_width = 1200
+		window_height = 1200
+		maze_length = window_height
+
+		offset = 50
+
+
+		maze_window = tk.Toplevel(self.frame)
+		maze_window.grid()
+
+		drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
+		drawing.grid()
+
+		#drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset)
+
+		for i in range(len(self.maze.slabs)):
+			for j in range(len(self.maze.slabs[i])):
+				if self.maze.slabs[i][j]:
+					x_i = (j / self.maze.size) * maze_length + offset
+					x_f = ((j+1) / self.maze.size) * maze_length + offset
+
+					y_i = (i / self.maze.size) * maze_length + offset
+					y_f = y_i
+					drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=5)
+
+		for i in range(len(self.maze.columns)):
+			for j in range(len(self.maze.columns[i])):
+				if self.maze.columns[i][j]:
+					x_i = i / self.maze.size  * maze_length + offset
+					x_f = x_i
+
+					y_i = (j / self.maze.size) * maze_length + offset
+					y_f = ((j+1) / self.maze.size) * maze_length + offset
+					drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=5)
+
+
+		#drawing.create_line(0, 0, 200, 100)
+		#drawing.create_line(0, 100, 200, 0, fill="red", dash=(4, 4))
+
+		#drawing.create_rectangle(50, 25, 150, 75, fill="blue")
+		
+
 
 	def gen_and_display_maze(self):
 		self.generate_maze()
+		make_random_walls(self.maze) # REMOVE THIS. FOR DEMO ONLY.
 		self.display_maze()
+
 
 
 def gen_maze_no_inner_walls(size):
@@ -90,6 +141,20 @@ def gen_maze_no_inner_walls(size):
 	columns[-1] = [True for i in range(size)]
 
 	return slabs, columns
+
+def random_bool():
+	return random() > .5
+
+def make_random_walls(maze):
+	for sequence in maze.slabs:
+		for i in range(len(sequence)):
+			if random_bool():
+				sequence[i] = True
+
+	for sequence in maze.columns:
+		for i in range(len(sequence)):
+			if random_bool():
+				sequence[i] = True
 
 class Maze:
 	# The maze wasn't meant for you.
@@ -158,19 +223,34 @@ class Maze:
 
 def main():
 	root = tk.Tk()
+	root.wm_title('Maze Generation Application')
 	app = App(root)
 	root.mainloop()
 
 def debug():
-	print('Here are some empty mazes for you.')
-	for i in range(1,10):
-		m = Maze(i, gen_maze_no_inner_walls)
-		print(m)
-		print(m[0,0])
-		m[0, 0, 'S'] = True
-		m[0, 0, 'E'] = True
-		print(m)
+	m = Maze(5, gen_maze_no_inner_walls)
+	make_random_walls(m)
+	#print('Here are some empty mazes for you.')
+	#for i in range(1,10):
+	#	m = Maze(i, gen_maze_no_inner_walls)
+	#	print(m)
+	#	print(m[0,0])
+	#	m[0, 0, 'S'] = True
+	#	m[0, 0, 'E'] = True
+	print(m)
+
+
+def draw():
+	def quit():
+		root.quit()
+	root = tk.Tk()
+	root.bind('<control-c>', quit)
+	app = App(root)
+	app.generate_maze()
+	app.display_maze()
+	root.mainloop()
 
 if __name__ == '__main__':
 	main()
 	#debug()
+	#draw()
