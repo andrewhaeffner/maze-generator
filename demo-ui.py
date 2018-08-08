@@ -3,61 +3,75 @@ import tkinter.font as tkFont
 import sys
 from random import random, choice
 
+# U-I options.
+maze_size_entry_on = True
+
+save_button_on = False
+load_button_on = False
+generate_button_on = False
+display_button_on = True
+gen_and_display_button_on = True
+button_width = 18
+
 class App:
 	def __init__(self, master):
 		self.frame = tk.Frame(master)
 		self.frame.grid()
 
+		# Fonts.
 		helvetica_font = tkFont.Font(root = master, family='Helvetica', size=16, weight='bold')
-		button_width = 18
+		default_font = helvetica_font
 
-		self.save_button = tk.Button(self.frame, text='Save to File', command=self.save_maze)
-		self.load_button = tk.Button(self.frame, text='Load from File', command=self.load_maze)
-		self.generate_button = tk.Button(self.frame, text='Generate Maze', command=self.generate_maze)
-		self.display_button = tk.Button(self.frame, text='Display Maze', command=self.display_maze)
-		self.gen_and_display_button = tk.Button(self.frame, text='Gen & Display Maze', command=self.gen_and_display_maze)
+		row_slot = 0
 
-		self.save_button.config(height=1, width=button_width) # h and w are in characters.
-		self.load_button.config(height=1, width=button_width)
-		self.generate_button.config(height=1, width=button_width)
-		self.display_button.config(height=1, width=button_width)
-		self.gen_and_display_button.config(height=1, width=button_width)
+		if maze_size_entry_on:
+			self.maze_size_label = tk.Label(self.frame, font=helvetica_font, text='Maze side length:')
+			self.maze_size_label.config(height=1, width=16)
+			self.maze_size_label.grid(row=row_slot, column=0)
 
-		self.save_button['font'] = helvetica_font
-		self.load_button['font'] = helvetica_font
-		self.generate_button['font'] = helvetica_font
-		self.display_button['font'] = helvetica_font
-		self.gen_and_display_button['font'] = helvetica_font
+			self.maze_size_entry = tk.Entry(self.frame, font=helvetica_font)
+			self.maze_size_entry.insert(0, "10")
+			self.maze_size_entry.grid(row=row_slot, column=1)
+			# to get current entry (e)'s text: s = e.get()
+			row_slot += 1
 
+		if save_button_on:
+			self.save_button = tk.Button(self.frame, text='Save to File', command=self.save_maze)
+			self.save_button.config(height=1, width=button_width) # h and w are in characters.
+			self.save_button['font'] = helvetica_font
+			self.save_button.grid(row=row_slot, column=0)
+			row_slot += 1
 
-		self.save_button.grid(row=1, column=0)
-		self.load_button.grid(row=2, column=0)
-		self.generate_button.grid(row=3, column=0)
-		self.display_button.grid(row=4, column=0)
-		self.gen_and_display_button.grid(row=5, column=0)
-		#self.save_button.pack(side=tk.LEFT)
-		#self.load_button.pack(side=tk.LEFT)
-		#self.generate_button.pack(side=tk.LEFT)
-		#self.display_button.pack(side=tk.LEFT)
-		#self.gen_and_display_button.pack(side=tk.LEFT)
+		if load_button_on:
+			self.load_button = tk.Button(self.frame, text='Load from File', command=self.load_maze)
+			self.load_button.config(height=1, width=button_width)
+			self.load_button['font'] = helvetica_font
+			self.load_button.grid(row=row_slot, column=0)
+			row_slot += 1
 
+		if generate_button_on:
+			self.generate_button = tk.Button(self.frame, text='Generate Maze', command=self.generate_maze)
+			self.generate_button.config(height=1, width=button_width)
+			self.generate_button['font'] = helvetica_font
+			self.generate_button.grid(row=row_slot, column=0)
+			row_slot += 1
 
-		self.maze_size_label = tk.Label(self.frame, font=helvetica_font, text='Maze side length:')
-		self.maze_size_label.config(height=1, width=16)
+		if display_button_on:
+			self.display_button = tk.Button(self.frame, text='Display Maze', command=self.display_maze)
+			self.display_button.config(height=1, width=button_width)
+			self.display_button['font'] = helvetica_font
+			self.display_button.grid(row=row_slot, column=0)
+			row_slot += 1
 
-		self.maze_size_entry = tk.Entry(self.frame, font=helvetica_font)
-		self.maze_size_entry.insert(0, "10")
+		if gen_and_display_button_on:
+			self.gen_and_display_button = tk.Button(self.frame, text='Gen & Display Maze', command=self.gen_and_display_maze)
+			self.gen_and_display_button.config(height=1, width=button_width)
+			self.gen_and_display_button['font'] = helvetica_font
+			self.gen_and_display_button.grid(row=row_slot, column=0)
+			row_slot += 1
 
-		self.maze_size_label.grid(row=0, column=0)
-		self.maze_size_entry.grid(row=0, column=1)
-
-		# to get current entry (e)'s text: s = e.get()
-
-		#self.maze_size_entry.pack(side=tk.LEFT)
 
 		self.maze = None # represents the Maze that is currently loaded.
-
-
 
 	def load_maze(self):
 		# Come up with a decent way to save a maze as a file. define walls, maybe?
