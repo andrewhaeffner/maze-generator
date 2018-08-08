@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.font as tkFont
 import sys
 from random import random, choice
+from time import sleep
 
 # U-I options.
 maze_size_entry_on = True
@@ -11,18 +12,24 @@ load_button_on = False
 generate_button_on = False
 display_button_on = True
 gen_and_display_button_on = True
+algorithm_selection_on = False
 button_width = 18
 
 class App:
 	def __init__(self, master):
 		self.frame = tk.Frame(master)
 		self.frame.grid()
+		self.root = master
 
 		# Fonts.
 		helvetica_font = tkFont.Font(root = master, family='Helvetica', size=16, weight='bold')
 		default_font = helvetica_font
 
 		row_slot = 0
+
+		if algorithm_selection_on:
+			pass
+			# dropdown!!
 
 		if maze_size_entry_on:
 			self.maze_size_label = tk.Label(self.frame, font=helvetica_font, text='Maze side length:')
@@ -35,6 +42,7 @@ class App:
 			# to get current entry (e)'s text: s = e.get()
 			row_slot += 1
 
+		# TODO: Create a custom Button class to reduce the repetition in the next 30+ lines of code.
 		if save_button_on:
 			self.save_button = tk.Button(self.frame, text='Save to File', command=self.save_maze)
 			self.save_button.config(height=1, width=button_width) # h and w are in characters.
@@ -117,7 +125,7 @@ class App:
 
 					y_i = (i / self.maze.size) * maze_length + offset
 					y_f = y_i
-					drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=5)
+					drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=3)
 
 		for i in range(len(self.maze.columns)):
 			for j in range(len(self.maze.columns[i])):
@@ -127,7 +135,7 @@ class App:
 
 					y_i = (j / self.maze.size) * maze_length + offset
 					y_f = ((j+1) / self.maze.size) * maze_length + offset
-					drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=5)
+					drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=3)
 
 
 		#drawing.create_line(0, 0, 200, 100)
@@ -139,8 +147,139 @@ class App:
 
 	def gen_and_display_maze(self):
 		self.generate_maze()
-		make_depth_first_maze(self.maze) # REMOVE THIS. FOR DEMO ONLY.
-		self.display_maze()
+		#make_depth_first_maze(self.maze) # REMOVE THIS. FOR DEMO ONLY.
+		make_depth_first_maze_animated(self.maze, self.frame, self.root)
+		#self.display_maze()
+
+
+
+def make_depth_first_maze_animated(maze, frame, root):
+
+	#drawing.create_line(x_i,y_i, x_f,y_f, fill="red", width=3)
+
+	def clear_out_cell(position):
+		size = maze.size
+		x = position[0]
+		y = position[1]
+
+		x_i = (x / size) * maze_length + (line_width / 2) + offset
+		x_f = ((x+1) / size) * maze_length - (line_width / 2) + offset
+
+		y_i = (y / size) * maze_length + (line_width / 2) + offset
+		y_f = ((y+1) / size) * maze_length - (line_width / 2) + offset
+
+		drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,outline=blank_color)
+
+	def remove_wall(position, move):
+		x = position[0]
+		y = position[1]
+		if move == 'N':
+			line_crawl = line_width / 2
+			x_i = (x / maze.size) * maze_length + line_crawl + offset
+			x_f = ((x+1) / maze.size) * maze_length - line_crawl + offset + 1
+
+			y_i = (y / maze.size) * maze_length + offset
+			y_f = y_i
+			drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
+
+		if move == 'S':
+			remove_wall((x,y+1), 'N')
+
+
+		if move == 'W':
+			line_crawl = line_width / 2
+
+			x_i = x / maze.size  * maze_length + offset
+			x_f = x_i
+
+			y_i = (y / maze.size) * maze_length + line_crawl + offset
+			y_f = ((y+1) / maze.size) * maze_length - line_crawl + 1 + offset
+			drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
+
+		if move == 'E':
+			remove_wall((x+1,y), 'W')
+
+
+
+	#def __setitem__(self, key, value):
+	#	x = key[0]
+	#	y = key[1]
+	#	letter = key[2]
+
+	#	if letter == 'N':   self.slabs[y][x] = value
+	#	elif letter == 'S': self.slabs[y+1][x] = value
+	#	elif letter == 'W': self.columns[x][y] = value
+	#	elif letter == 'E': self.columns[x+1][y] = value
+
+
+	sleep_time = .01
+	default_color = 'black'
+	blank_color = 'white'
+	line_width = 5
+
+	window_width = 1200
+	window_height = 1200
+	maze_length = window_height
+
+	offset = 50
+
+	maze_window = tk.Toplevel(frame)
+	maze_window.grid()
+
+	drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
+	drawing.pack()
+
+	drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=default_color)
+
+
+	# initial state: walls everywhere
+	for row in maze.slabs:
+		for i in range(len(row)):
+			row[i] = True
+	for row in maze.columns:
+		for i in range(len(row)):
+			row[i] = True
+
+	# Start in top-left corner. Have a stack for move-memory and a table for squares visited.
+	move_memory = [(0,0)]
+	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
+	visited[0][0] = True
+
+	clear_out_cell((0,0))
+
+	while len(move_memory) > 0:
+
+		move_options = find_unvisited_neighbors(move_memory[-1], visited)
+
+		if len(move_options) == 0:
+			move_memory.pop()
+			continue
+
+		move = choice(move_options)
+
+		# destroy wall
+		x = move_memory[-1][0]
+		y = move_memory[-1][1]
+		maze[x, y, move] = False
+
+		# start timer
+		#initial_time = time()
+
+		remove_wall(move_memory[-1], move)
+		new_position = apply_move(move_memory[-1], move)
+		clear_out_cell(new_position)
+
+		move_memory.append(new_position)
+
+		visited[new_position[0]][new_position[1]] = True
+
+		root.update()
+		sleep(sleep_time)
+		#while(time() < initial_time + .5):
+		#	pass
+		# wait until timer is done.
+
+
 
 
 
