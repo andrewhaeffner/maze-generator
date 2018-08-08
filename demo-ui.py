@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.font as tkFont
 import sys
-from random import random
+from random import random, choice
 
 class App:
 	def __init__(self, master):
@@ -125,7 +125,7 @@ class App:
 
 	def gen_and_display_maze(self):
 		self.generate_maze()
-		make_random_walls(self.maze) # REMOVE THIS. FOR DEMO ONLY.
+		make_depth_first_maze(self.maze) # REMOVE THIS. FOR DEMO ONLY.
 		self.display_maze()
 
 
@@ -155,6 +155,81 @@ def make_random_walls(maze):
 		for i in range(len(sequence)):
 			if random_bool():
 				sequence[i] = True
+
+def find_unvisited_neighbors(current_position, visited):
+
+	x_i = current_position[0]
+	y_i = current_position[1]
+
+	size = len(visited)
+
+	good_neighbors = []
+
+	if x_i > 0 and not visited[x_i - 1][y_i]:
+		good_neighbors.append('W')
+
+	if x_i < size - 1 and not visited[x_i + 1][y_i]:
+		good_neighbors.append('E')
+
+	if y_i > 0 and not visited[x_i][y_i - 1]:
+		good_neighbors.append('N')
+
+	if y_i < size - 1 and not visited[x_i][y_i + 1]:
+		good_neighbors.append('S')
+
+	return good_neighbors
+
+def apply_move(current_position, move):
+	x = current_position[0]
+	y = current_position[1]
+
+	if move == 'N':
+		y -= 1
+	elif move == 'S':
+		y += 1
+	elif move == 'W':
+		x -= 1
+	elif move == 'E':
+		x += 1
+
+	return (x, y)
+
+def make_depth_first_maze(maze):
+
+	# initial state: walls everywhere
+	for row in maze.slabs:
+		for i in range(len(row)):
+			row[i] = True
+	for row in maze.columns:
+		for i in range(len(row)):
+			row[i] = True
+
+	# Start in top-left corner. Have a stack for move-memory and a table for squares visited.
+	move_memory = [(0,0)]
+	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
+	visited[0][0] = True
+
+	while len(move_memory) > 0:
+
+		move_options = find_unvisited_neighbors(move_memory[-1], visited)
+
+		if len(move_options) == 0:
+			move_memory.pop()
+			continue
+
+		move = choice(move_options)
+
+		# destroy wall
+		x = move_memory[-1][0]
+		y = move_memory[-1][1]
+		maze[x, y, move] = False
+
+		new_position = apply_move(move_memory[-1], move)
+
+		move_memory.append(new_position)
+
+		visited[new_position[0]][new_position[1]] = True
+
 
 class Maze:
 	# The maze wasn't meant for you.
