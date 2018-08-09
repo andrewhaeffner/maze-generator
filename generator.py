@@ -1,5 +1,5 @@
 ##############################
-# Filename: demo_ui.py
+# Filename: generator.py
 # Author: Andrew J. Haeffner MIT EECS c/o 2021
 # Date: ~August 2018
 # Description: This is a maze generator written in python(3)!
