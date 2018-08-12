@@ -70,6 +70,10 @@ class App:
 		self.frame = tk.Frame(master)
 		self.frame.grid()
 		self.root = master
+		def return_callback(arg):
+			self.generate_and_animate_maze()
+
+		self.root.bind('<Return>', return_callback)
 		global item_count
 
 		helvetica_font = tkFont.Font(root = master, family='Helvetica', size=18, weight='bold')
@@ -106,9 +110,12 @@ class App:
 
 		maze_window = tk.Toplevel(self.frame)
 		maze_window.grid()
+		maze_window.bind('<Control-w>', quit)
+
 
 		drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
 		drawing.grid()
+
 
 		for i in range(len(self.maze.slabs)):
 			for j in range(len(self.maze.slabs[i])):
@@ -236,6 +243,11 @@ def make_depth_first_maze(maze, frame=None, root=None, speed=0):
 
 		maze_window = tk.Toplevel(frame)
 		maze_window.grid()
+		def destroy(arg):
+			maze_window.destroy()
+
+		maze_window.bind('<Control-w>', destroy)
+		maze_window.bind('<Control-q>', quit)
 
 		drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
 		drawing.pack()
@@ -353,6 +365,9 @@ class Maze:
 def main():
 	root = tk.Tk()
 	root.wm_title('Maze Generation Application')
+	root.bind('<Control-c>', quit)
+	root.bind('<Control-q>', quit)
+	root.bind('<Control-w>', quit)
 	app = App(root)
 	root.mainloop()
 
