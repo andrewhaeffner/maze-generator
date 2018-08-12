@@ -15,6 +15,7 @@ from time import sleep
 ##########
 window_width = 2000
 window_height = window_width # square mazes & windows. For now.
+maze_length = window_height
 offset = 0 # Allows for a rim of blankness around the maze.
 default_color = 'black'
 blank_color = 'white'
@@ -24,8 +25,6 @@ line_width = 5
 #UI options.
 ##########
 maze_size_entry_on = True
-save_button_on = False
-load_button_on = False
 generate_button_on = True
 display_button_on = True
 generate_and_animate_button_on = True
@@ -49,7 +48,6 @@ algorithm_options = [ # these options must match the generate_maze entries char 
 item_count = 0
 
 class Button(tk.Button):
-
 	def __init__(self, master, f, t, c):
 		global item_count
 		super().__init__(master, font=f, text=t, command=c)
@@ -103,19 +101,11 @@ class App:
 		if algorithm_selection_on: self.algorithm_selection, self.selected_algorithm, self.algorithm_selection_label = create_dropdown_menu(self.frame, default_font, "Generation Algorithm:", algorithm_options)
 		if animation_speed_entry_on: self.animation_speed_label, self.animation_speed_entry = create_text_entry(self.frame, default_font, 'Animation Speed (sqrs/s): ', str(default_animation_speed))
 		if maze_size_entry_on: self.maze_size_label, self.maze_size_entry = create_text_entry(self.frame, default_font, 'Maze side length', str(default_maze_side_length))
-		if save_button_on: self.save_button = Button(self.frame, default_font, 'Save to File', self.save_maze)
-		if load_button_on: self.load_button = Button(self.frame, default_font, 'Load from File', self.load_maze)
 		if generate_button_on: self.generate_button = Button(self.frame, default_font, 'Generate Maze', self.generate_maze)
 		if display_button_on: self.display_button = Button(self.frame, default_font, 'Display Maze', self.display_maze)
 		if generate_and_animate_button_on: self.generate_and_animate_button = Button(self.frame, default_font, 'Generate maze (animated)', self.generate_and_animate_maze)
 
 		self.maze = None # represents the Maze that is currently loaded.
-
-	def load_maze(self): # Loading and saving probably won't be implemented for a while. :( sad
-		pass
-
-	def save_maze(self):
-		pass
 
 	def generate_maze(self, speed=0, algorithm=None, max_size=1000):
 		maze_size = int(self.maze_size_entry.get()) % max_size # maze size in length of a side. max of 1000 b/c performance.
@@ -137,18 +127,8 @@ class App:
 			print('Cannot display a maze that does not exist.')
 			return
 
-		maze_length = window_height
-
-		maze_window = tk.Toplevel(self.frame)
-		maze_window.grid()
-		maze_window.bind('<Control-w>', quit)
-
-
-		drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
-		drawing.grid()
-
+		maze_window, drawing = make_maze_display(self.frame, self.root)
 		drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=blank_color)
-
 
 		for i in range(len(self.maze.slabs)):
 			for j in range(len(self.maze.slabs[i])):
@@ -200,7 +180,6 @@ def make_random_walls(maze, frame=None, root=None, speed=0):
 			if random_bool():
 				sequence[i] = True
 
-
 def find_unvisited_neighbors(current_position, visited):
 	x_i = current_position[0]
 	y_i = current_position[1]
@@ -227,68 +206,73 @@ def apply_move(current_position, move):
 
 	return (x, y)
 
-def make_depth_first_maze(maze, frame=None, root=None, speed=0):
 
+def make_maze_display(frame, root):
+	maze_window = tk.Toplevel(frame)
+	maze_window.grid()
+
+	def destroy(arg):
+		maze_window.destroy()
+
+	maze_window.bind('<Control-w>', destroy)
+	maze_window.bind('<Control-q>', quit)
+
+	drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
+	drawing.grid()
+
+	drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=default_color)
+
+	return maze_window, drawing
+
+def clear_out_cell(position, size, drawing):
+	x = position[0]
+	y = position[1]
+
+	x_i = (x / size) * maze_length + (line_width / 2) + offset
+	x_f = ((x+1) / size) * maze_length - (line_width / 2) + offset
+
+	y_i = (y / size) * maze_length + (line_width / 2) + offset
+	y_f = ((y+1) / size) * maze_length - (line_width / 2) + offset
+
+	drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,outline=blank_color)
+
+def remove_wall(position, move, size, drawing):
+	x = position[0]
+	y = position[1]
+	if move == 'N':
+		line_crawl = line_width / 2
+		x_i = (x / size) * maze_length + line_crawl + offset
+		x_f = ((x+1) / size) * maze_length - line_crawl + offset + 1
+
+		y_i = (y / size) * maze_length + offset
+		y_f = y_i
+		drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
+
+	if move == 'S': remove_wall((x,y+1), 'N', size, drawing)
+
+	if move == 'W':
+		line_crawl = line_width / 2
+
+		x_i = x / size  * maze_length + offset
+		x_f = x_i
+
+		y_i = (y / size) * maze_length + line_crawl + offset
+		y_f = ((y+1) / size) * maze_length - line_crawl + 1 + offset
+		drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
+
+	if move == 'E': remove_wall((x+1,y), 'W', size, drawing)
+
+def pause(root, t):
+	root.update()
+	sleep(t)
+
+def make_depth_first_maze(maze, frame=None, root=None, speed=0):
 	animating = not speed == 0
 
 	if animating:
-		def clear_out_cell(position):
-			size = maze.size
-			x = position[0]
-			y = position[1]
-
-			x_i = (x / size) * maze_length + (line_width / 2) + offset
-			x_f = ((x+1) / size) * maze_length - (line_width / 2) + offset
-
-			y_i = (y / size) * maze_length + (line_width / 2) + offset
-			y_f = ((y+1) / size) * maze_length - (line_width / 2) + offset
-
-			drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,outline=blank_color)
-
-		def remove_wall(position, move):
-			x = position[0]
-			y = position[1]
-			if move == 'N':
-				line_crawl = line_width / 2
-				x_i = (x / maze.size) * maze_length + line_crawl + offset
-				x_f = ((x+1) / maze.size) * maze_length - line_crawl + offset + 1
-
-				y_i = (y / maze.size) * maze_length + offset
-				y_f = y_i
-				drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
-
-			if move == 'S': remove_wall((x,y+1), 'N')
-
-			if move == 'W':
-				line_crawl = line_width / 2
-
-				x_i = x / maze.size  * maze_length + offset
-				x_f = x_i
-
-				y_i = (y / maze.size) * maze_length + line_crawl + offset
-				y_f = ((y+1) / maze.size) * maze_length - line_crawl + 1 + offset
-				drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
-
-			if move == 'E': remove_wall((x+1,y), 'W')
-
 		sleep_time = 1 / speed
-
-		maze_length = window_height
-
-		maze_window = tk.Toplevel(frame)
-		maze_window.grid()
-		def destroy(arg):
-			maze_window.destroy()
-
-		maze_window.bind('<Control-w>', destroy)
-		maze_window.bind('<Control-q>', quit)
-
-		drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
-		drawing.pack()
-
-		drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=default_color)
-
-		clear_out_cell((0,0))
+		maze_window, drawing = make_maze_display(frame, root)
+		clear_out_cell((0,0), maze.size, drawing)
 
 	# initial state: walls everywhere
 	for row in maze.slabs:
@@ -305,7 +289,9 @@ def make_depth_first_maze(maze, frame=None, root=None, speed=0):
 
 	while len(move_memory) > 0:
 
-		move_options = find_unvisited_neighbors(move_memory[-1], visited)
+		current_position = move_memory[-1]
+
+		move_options = find_unvisited_neighbors(current_position, visited)
 
 		if len(move_options) == 0:
 			move_memory.pop()
@@ -318,140 +304,46 @@ def make_depth_first_maze(maze, frame=None, root=None, speed=0):
 		y = move_memory[-1][1]
 		maze[x, y, move] = False
 
-		if animating: remove_wall(move_memory[-1], move)
-
-		new_position = apply_move(move_memory[-1], move)
-
-		if animating: clear_out_cell(new_position)
+		new_position = apply_move(current_position, move)
 
 		move_memory.append(new_position)
 
 		visited[new_position[0]][new_position[1]] = True
 
 		if animating:
-			root.update()
-			sleep(sleep_time)
+			remove_wall(current_position, move, maze.size, drawing)
+			clear_out_cell(new_position, maze.size, drawing)
+			pause(root, sleep_time)
 
 def make_binary_tree_maze(maze, frame=None, root=None, speed=0):
-
 	animating = not speed == 0
 
 	if animating:
-		def clear_out_cell(position):
-			size = maze.size
-			x = position[0]
-			y = position[1]
-
-			x_i = (x / size) * maze_length + (line_width / 2) + offset
-			x_f = ((x+1) / size) * maze_length - (line_width / 2) + offset
-
-			y_i = (y / size) * maze_length + (line_width / 2) + offset
-			y_f = ((y+1) / size) * maze_length - (line_width / 2) + offset
-
-			drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,outline=blank_color)
-
-		def remove_wall(position, move):
-			x = position[0]
-			y = position[1]
-			if move == 'N':
-				line_crawl = line_width / 2
-				x_i = (x / maze.size) * maze_length + line_crawl + offset
-				x_f = ((x+1) / maze.size) * maze_length - line_crawl + offset + 1
-
-				y_i = (y / maze.size) * maze_length + offset
-				y_f = y_i
-				drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
-
-			if move == 'S': remove_wall((x,y+1), 'N')
-
-			if move == 'W':
-				line_crawl = line_width / 2
-
-				x_i = x / maze.size  * maze_length + offset
-				x_f = x_i
-
-				y_i = (y / maze.size) * maze_length + line_crawl + offset
-				y_f = ((y+1) / maze.size) * maze_length - line_crawl + 1 + offset
-				drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
-
-			if move == 'E': remove_wall((x+1,y), 'W')
-
-			if animating:
-				root.update()
-				sleep(sleep_time)
-
 		sleep_time = 1 / speed
+		maze_window, drawing = make_maze_display(frame, root)
 
-		maze_length = window_height
+	def traverse(x, y):
+		if not visited[x][y]:
 
-		maze_window = tk.Toplevel(frame)
-		maze_window.grid()
-		def destroy(arg):
-			maze_window.destroy()
+			visited[x][y] = True
 
-		maze_window.bind('<Control-w>', destroy)
-		maze_window.bind('<Control-q>', quit)
-
-		drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
-		drawing.pack()
-
-		drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=default_color)
-
-	### Method
-	#
-	#	initial state: all walls.
-	#	Rule: create random passage from each cell either left or up.
-	#		- Note: edge case of top or left restricts passage choice.
-	#
-	#	As for the ordering. It can be done in sequence, iteratively
-	#	over each square. But that animation doesn't look the best
-	#   ... me thinks.
-	#
-	#	I would much rather have it 'follow' itself from the bottom to
-	#	the top. Kind of right to left, moving up a row at a time.
-	#	once it hits an opened square it will stop.
-	#
-	###
-
-	def traverse(x_i, y_i):
-		if not visited[x_i][y_i]:
-
-			#if animating:
-			#	pass
-				# draw blank square bounded on all four sides
-
-			x = x_i
-			y = y_i
-			visited[x_i][y_i] = True
-
-			if animating: clear_out_cell((x_i,y_i))
+			if animating: clear_out_cell((x,y), maze.size, drawing)
 
 			options = ['N', 'W']
-			if y_i == 0:
-				options.remove('N')
-			if x_i == 0:
-				options.remove('W')
+			if y == 0: options.remove('N')
+			if x == 0: options.remove('W')
 
 			if len(options) == 0: return # i.e.: top left corner has been reached.
 
 			direction = choice(options)
-			maze[x_i, y_i, direction] = False
+			maze[x, y, direction] = False
 
-			if animating: remove_wall((x_i,y_i), direction)
+			if animating:
+				remove_wall((x,y), direction, maze.size, drawing)
+				pause(root, sleep_time)
 
-
-			if direction == 'N':
-				y -= 1
-			elif direction == 'W':
-				x -= 1
-
-				#if animating:
-				#	pass
-					# remove western wall
-
-			traverse(x,y) # recurse me, baby.
-
-
+			new_position = apply_move((x,y), direction)
+			traverse(new_position[0], new_position[1]) # recurse, going along the path.
 
 	# initial state: walls everywhere
 	for row in maze.slabs:
@@ -463,17 +355,10 @@ def make_binary_tree_maze(maze, frame=None, root=None, speed=0):
 
 	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
 
-
-	if animating:
-		pass
-		# create data structures
-		# draw black-top
-
-
+	# Traverse every single square iteratively.
 	for i in range(maze.size-1, -1, -1):
 		for j in range(0, maze.size, 1):
 			traverse(j,i)
-
 
 class Maze:
 	# The maze wasn't meant for you.
@@ -502,7 +387,6 @@ class Maze:
 		elif letter == 'E': self.columns[x+1][y] = value
 
 	def __str__(self):
-
 		result = []
 
 		for i in range(self.size + 1):
