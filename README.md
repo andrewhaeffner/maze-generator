@@ -11,3 +11,13 @@ To run the program just download generator.py and do ```python3 generator.py``` 
 Here are some screenshots of prim's algorithm in action:
 
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm1.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm2.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm3.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm4.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm5.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm6.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm7.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm8.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm9.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm10.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm11.png)
