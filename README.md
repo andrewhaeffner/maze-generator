@@ -10,6 +10,8 @@ To run the program just download generator.py and do ```python3 generator.py``` 
 
 Here are some screenshots of prim's algorithm in action:
 
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/depthfirst.gif)
+
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm1.png)
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm2.png)
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm3.png)
