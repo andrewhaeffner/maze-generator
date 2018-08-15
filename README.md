@@ -10,7 +10,7 @@ To run the program just download generator.py and do ```python3 generator.py``` 
 
 Here are some screenshots & gifs of the algorithms in action:
 
-Depth First Maze Generation
+Depth First
 
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/depthfirst.gif)
 
