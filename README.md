@@ -7,3 +7,7 @@ This is a work in progress that does not exactly have an end goal. I am finding 
 I am considering creating a counterpart to this program in javascript. It would be so cool to have a clean web/mobile app interface for these maze generators. I'll stick with python for at least a bit, though.
 
 To run the program just download generator.py and do ```python3 generator.py``` in the terminal.
+
+Here are some screenshots of prim's algorithm in action:
+
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm1.png)
