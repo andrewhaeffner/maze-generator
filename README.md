@@ -8,10 +8,12 @@ I am considering creating a counterpart to this program in javascript. It would 
 
 To run the program just download generator.py and do ```python3 generator.py``` in the terminal.
 
-Here are some screenshots of prim's algorithm in action:
+Here are some screenshots & gifs of the algorithms in action:
 
+Depth First Maze Generation
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/depthfirst.gif)
 
+Prim's Algorithm
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm1.png)
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm2.png)
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm3.png)
@@ -23,3 +25,4 @@ Here are some screenshots of prim's algorithm in action:
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm9.png)
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm10.png)
 ![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm11.png)
+![alt text](https://github.com/andrewhaeffner/maze-generator/blob/master/screenshots/primsalgorithm12.png)
