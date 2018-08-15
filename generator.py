@@ -41,6 +41,7 @@ default_maze_side_length = 200
 algorithm_options = [ # these options must match the generate_maze entries char for char.
 "depth first",
 "binary tree",
+"prims algorithm",
 "random walls (wont animate)"
 ]
 ##########
@@ -117,6 +118,8 @@ class App:
 				algorithm = make_depth_first_maze
 			elif text == 'binary tree':
 				algorithm = make_binary_tree_maze
+			elif text == 'prims algorithm':
+				algorithm = make_prims_algorithm_maze
 			elif text == 'random walls (wont animate)':
 				algorithm = make_random_walls
 
@@ -204,7 +207,7 @@ def apply_move(current_position, move):
 	elif move == 'W': x -= 1
 	elif move == 'E': x += 1
 
-	return (x, y)
+	return Node(x, y)
 
 
 def make_maze_display(frame, root):
@@ -359,6 +362,122 @@ def make_binary_tree_maze(maze, frame=None, root=None, speed=0):
 	for i in range(maze.size-1, -1, -1):
 		for j in range(0, maze.size, 1):
 			traverse(j,i)
+
+class Node:
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+
+	def __eq__(self, other):
+		return self.x == other.x and self.y == other.y
+	def __getitem__(self, key):
+		if key == 0: return self.x
+		return self.y
+	def __str__(self):
+		return "(" + str(self.x) + "," + str(self.y) + ")"
+
+class Edge:
+	def __init__(self, first, second, weight):
+		self.first = first
+		self.second = second
+		self.weight = weight
+
+	def __contains__(self, item):
+		return self.first == item or self.second == item
+
+	def __eq__(self, other):
+		return (self.first == other.first and self.second == other.second) or (self.first == other.second and self.second == other.first)
+
+	def __lt__(self, other):
+		return self.weight < other.weight
+
+	def __str__(self):
+		return str(self.first) + "-->" + str(self.second)
+
+class PriorityQueue:
+	def __init__(self):
+		self.queue = []
+
+	def insert(self, items):
+		# note! takes in a list of items. we still handle the lone wolf though.
+		if type(items) is list:
+			self.queue.extend(items)
+		else:
+			self.queue.append(items)
+		self.queue.sort()
+
+
+	def peek(self):
+		return self.queue[0]
+
+	def get_min(self):
+		return self.queue.pop(0)
+
+	def len(self):
+		return len(self.queue)
+
+class EdgePriorityQueue(PriorityQueue):
+	def remove(self, key):
+		i = 0
+		while i < len(self.queue):
+			if key in self.queue[i]:
+				self.queue.pop(i)
+				continue
+			i += 1
+
+def random_integer(max):
+	return int(random() * max) + 1
+
+def get_move(start, finish):
+	char = 'error in get move'
+	if finish.y > start.y:
+		char = 'S'
+	elif finish.y < start.y:
+		char = 'N'
+	elif finish.x > start.x:
+		char = 'E'
+	elif finish.x < start.x:
+		char = 'W'
+	return char
+
+def make_prims_algorithm_maze(maze, frame=None, root=None, speed=0):
+	animating = not speed == 0
+	if animating:
+		sleep_time = 1 / speed
+		maze_window, drawing = make_maze_display(frame, root)
+
+
+	# initial state: walls everywhere
+	for row in maze.slabs:
+		for i in range(len(row)):
+			row[i] = True
+	for row in maze.columns:
+		for i in range(len(row)):
+			row[i] = True
+
+	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
+
+	max = 1000
+
+	queue = EdgePriorityQueue()
+	seed = (maze.size // 2, maze.size // 2)
+	start = Node(seed[0], seed[1])
+	visited[start.x][start.y] = True
+	neighbors = [Edge(start, apply_move(start, direction), random_integer(max)) for direction in find_unvisited_neighbors(start, visited)]
+	queue.insert(neighbors)
+	if animating: clear_out_cell(start, maze.size, drawing)
+
+	while queue.len() > 0:
+		move = queue.get_min()
+		queue.remove(move.second)
+		if animating: clear_out_cell(move.second, maze.size, drawing)
+		direct = get_move(move.first, move.second)
+		if animating: remove_wall(move.first, direct, maze.size, drawing)
+		visited[move.second.x][move.second.y] = True
+		maze[move.first.x, move.first.y, direct] = False
+		neighbors = [Edge(move.second, apply_move(move.second, direction), random_integer(max)) for direction in find_unvisited_neighbors(move.second, visited)]
+		queue.insert(neighbors)
+		pause(root, sleep_time)
 
 class Maze:
 	# The maze wasn't meant for you.
