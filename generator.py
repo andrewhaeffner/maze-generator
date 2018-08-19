@@ -183,6 +183,14 @@ def make_random_walls(maze, frame=None, root=None, speed=0):
 			if random_bool():
 				sequence[i] = True
 
+def fill_maze_all_walls(maze):
+	for row in maze.slabs:
+		for i in range(len(row)):
+			row[i] = True
+	for row in maze.columns:
+		for i in range(len(row)):
+			row[i] = True
+
 def find_unvisited_neighbors(current_position, visited):
 	x_i = current_position[0]
 	y_i = current_position[1]
@@ -278,12 +286,7 @@ def make_depth_first_maze(maze, frame=None, root=None, speed=0):
 		clear_out_cell((0,0), maze.size, drawing)
 
 	# initial state: walls everywhere
-	for row in maze.slabs:
-		for i in range(len(row)):
-			row[i] = True
-	for row in maze.columns:
-		for i in range(len(row)):
-			row[i] = True
+	fill_maze_all_walls(maze)
 
 	# Start in top-left corner. Have a stack for move-memory and a table for squares visited.
 	move_memory = [(0,0)]
@@ -349,12 +352,8 @@ def make_binary_tree_maze(maze, frame=None, root=None, speed=0):
 			traverse(new_position[0], new_position[1]) # recurse, going along the path.
 
 	# initial state: walls everywhere
-	for row in maze.slabs:
-		for i in range(len(row)):
-			row[i] = True
-	for row in maze.columns:
-		for i in range(len(row)):
-			row[i] = True
+	fill_maze_all_walls(maze)
+
 
 	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
 
@@ -395,16 +394,16 @@ class Edge:
 		return str(self.first) + "-->" + str(self.second)
 
 class PriorityQueue:
-	# reconsider the whole class given that None is the 0th element.
 	def __init__(self):
 		self.queue = [None]
 
 	def insert(self, item):
-		if type(item) is list:
-			for element in item:
-				self += element
-		else:
-			self += item
+		if type(item) is not list:
+			self.insert([item])
+			return
+		for element in item:
+			self.queue.append(element)
+			self.percolate_up(len(self))
 
 	def pop(self, index):
 		result = self.queue.pop(index+1)
@@ -414,24 +413,13 @@ class PriorityQueue:
 
 		return result
 
-	def __iadd__(self, item):
-		self.queue.append(item)
-		self.percolate_up(len(self))
-		return self
-
 	def __len__(self):
 		return len(self.queue) - 1
-
-	def peek(self):
-		if len(self) > 0:
-			return self.queue[1]
-		else:
-			raise IndexError("queue is empty")
 
 	def get_min(self):
 		return self.pop(0)
 
-	def percolate_up(self, index):
+	def percolate_up(self, index): # change to iterative percolate
 		if index == 1:
 			return
 
@@ -443,7 +431,7 @@ class PriorityQueue:
 			self.queue[index // 2] = temp
 			self.percolate_up(index // 2)
 
-	def percolate_down(self, index):
+	def percolate_down(self, index): # change to iterative percolate
 		current = self.queue[index]
 
 		if index > len(self) / 2:
@@ -460,17 +448,6 @@ class PriorityQueue:
 			self.queue[index] = self.queue[child]
 			self.queue[child] = temp
 			self.percolate_down(child)
-
-
-class EdgePriorityQueue(PriorityQueue):
-	def remove(self, key):
-		i = 0
-		while i < len(self):
-			#if key in self.queue[i+1]:
-			if key == self.queue[i+1]:
-				self.pop(i)
-				continue
-			i += 1
 
 def random_integer(max):
 	return int(random() * max) + 1
@@ -493,42 +470,40 @@ def make_prims_algorithm_maze(maze, frame=None, root=None, speed=0):
 		sleep_time = 1 / speed
 		maze_window, drawing = make_maze_display(frame, root)
 
-
-	# initial state: walls everywhere
-	for row in maze.slabs:
-		for i in range(len(row)):
-			row[i] = True
-	for row in maze.columns:
-		for i in range(len(row)):
-			row[i] = True
+	fill_maze_all_walls(maze)
 
 	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
 
 	max = 1000
 
-	queue = EdgePriorityQueue()
-	seed = (maze.size // 2, maze.size // 2)
-	start = Node(seed[0], seed[1])
+	queue = PriorityQueue()
+	create_weighted_edges = lambda position, visited : [Edge(position, apply_move(position, direction), random_integer(max)) for direction in find_unvisited_neighbors(position, visited)]
+
+	start = Node(maze.size // 2, maze.size // 2)
 	visited[start.x][start.y] = True
-	neighbors = [Edge(start, apply_move(start, direction), random_integer(max)) for direction in find_unvisited_neighbors(start, visited)]
-	queue.insert(neighbors)
+	queue.insert(create_weighted_edges(start, visited))
+
 	if animating: clear_out_cell(start, maze.size, drawing)
 
 	while len(queue) > 0:
 		move = queue.get_min()
 
-		#queue.remove(move.second)
 		if visited[move.second.x][move.second.y]:
 			continue
 
-		if animating: clear_out_cell(move.second, maze.size, drawing)
-		direct = get_move(move.first, move.second)
-		if animating: remove_wall(move.first, direct, maze.size, drawing)
+		move_direction = get_move(move.first, move.second)
+
 		visited[move.second.x][move.second.y] = True
-		maze[move.first.x, move.first.y, direct] = False
-		neighbors = [Edge(move.second, apply_move(move.second, direction), random_integer(max)) for direction in find_unvisited_neighbors(move.second, visited)]
+		maze[move.first.x, move.first.y, move_direction] = False # remove wall
+
+		neighbors = create_weighted_edges(move.second, visited)
 		queue.insert(neighbors)
-		pause(root, sleep_time)
+
+		if animating:
+			clear_out_cell(move.second, maze.size, drawing)
+			remove_wall(move.first, move_direction, maze.size, drawing)
+			pause(root, sleep_time)
+
 
 class Maze:
 	# The maze wasn't meant for you.
@@ -602,22 +577,5 @@ def main():
 	app = App(root)
 	root.mainloop()
 
-def debug():
-	m = Maze(5, gen_maze_no_inner_walls)
-	make_random_walls(m)
-	print(m)
-
-def draw():
-	def quit():
-		root.quit()
-	root = tk.Tk()
-	root.bind('<control-c>', quit)
-	app = App(root)
-	app.generate_maze()
-	app.display_maze()
-	root.mainloop()
-
 if __name__ == '__main__':
 	main()
-	#debug()
-	#draw()
