@@ -395,33 +395,79 @@ class Edge:
 		return str(self.first) + "-->" + str(self.second)
 
 class PriorityQueue:
+	# reconsider the whole class given that None is the 0th element.
 	def __init__(self):
-		self.queue = []
+		self.queue = [None]
 
-	def insert(self, items):
-		# note! takes in a list of items. we still handle the lone wolf though.
-		if type(items) is list:
-			self.queue.extend(items)
+	def insert(self, item):
+		if type(item) is list:
+			for element in item:
+				self += item
 		else:
-			self.queue.append(items)
-		self.queue.sort()
+			self += item
 
+	def pop(self, index):
+		result = self.queue.pop(index+1)
+		if len(self) - index > 1:
+			self.queue.insert(index+1, self.queue.pop(len(self)))
+			self.percolate_down(index+1)
+
+		return result
+
+	def __iadd__(self, item):
+		self.queue.append(item)
+		self.percolate_up(len(self))
+		return self
+
+	def __len__(self):
+		return len(self.queue) - 1
 
 	def peek(self):
-		return self.queue[0]
+		if len(self) > 0:
+			return self.queue[1]
+		else:
+			raise IndexError("queue is empty")
 
 	def get_min(self):
-		return self.queue.pop(0)
+		return self.pop(0)
 
-	def len(self):
-		return len(self.queue)
+	def percolate_up(self, index):
+		if index == 1:
+			return
+
+		current = self.queue[index]
+		parent = self.queue[index // 2]
+		if current < parent:
+			temp = current
+			self.queue[index] = parent
+			self.queue[index // 2] = temp
+			self.percolate_up(index // 2)
+
+	def percolate_down(self, index):
+		current = self.queue[index]
+
+		if index > len(self) / 2:
+			return
+
+		child = index * 2
+		if index * 2 + 1 < len(self):
+			challenger = index * 2 + 1
+			if self.queue[child] < self.queue[challenger]:
+				child = challenger
+
+		if self.queue[child] < current:
+			temp = current
+			self.queue[index] = self.queue[child]
+			self.queue[child] = temp
+			self.percolate_down(child)
+
 
 class EdgePriorityQueue(PriorityQueue):
 	def remove(self, key):
 		i = 0
-		while i < len(self.queue):
-			if key in self.queue[i]:
-				self.queue.pop(i)
+		while i < len(self):
+			if key in self.queue[i+1]:
+				self.pop(i)
 				continue
 			i += 1
 
