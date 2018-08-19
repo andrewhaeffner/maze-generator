@@ -402,7 +402,7 @@ class PriorityQueue:
 	def insert(self, item):
 		if type(item) is list:
 			for element in item:
-				self += item
+				self += element
 		else:
 			self += item
 
@@ -466,7 +466,8 @@ class EdgePriorityQueue(PriorityQueue):
 	def remove(self, key):
 		i = 0
 		while i < len(self):
-			if key in self.queue[i+1]:
+			#if key in self.queue[i+1]:
+			if key == self.queue[i+1]:
 				self.pop(i)
 				continue
 			i += 1
@@ -513,9 +514,13 @@ def make_prims_algorithm_maze(maze, frame=None, root=None, speed=0):
 	queue.insert(neighbors)
 	if animating: clear_out_cell(start, maze.size, drawing)
 
-	while queue.len() > 0:
+	while len(queue) > 0:
 		move = queue.get_min()
-		queue.remove(move.second)
+
+		#queue.remove(move.second)
+		if visited[move.second.x][move.second.y]:
+			continue
+
 		if animating: clear_out_cell(move.second, maze.size, drawing)
 		direct = get_move(move.first, move.second)
 		if animating: remove_wall(move.first, direct, maze.size, drawing)
