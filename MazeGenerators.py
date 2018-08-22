@@ -20,13 +20,9 @@ def fill_maze_all_walls(maze):
 
 class Maze:
 	# The maze wasn't meant for you.
-	def __init__(self, size=0, generation_func=gen_maze_no_inner_walls):
+	def __init__(self, size=0, generation_func=fill_maze_no_inner_walls):
 		self.size = size
-		self.gen_func = generation_func # save the func for __repr__
-		# take in a size and a generation func and produce the maze
-		# using generation_func(size).
-
-		self.slabs, self.columns = generation_func(size)
+		generation_func(self)
 
 	def __getitem__(self, key):
 		x = key[0]
@@ -78,8 +74,11 @@ class Maze:
 
 		return '\n'.join(result)
 
+	def __len__(self):
+		return self.size
+
 	def __repr__(self):
-		return 'Maze Object with side length ' + str(self.size) + ' and made with ' + str(self.gen_func)
+		return 'Maze Object with side length ' + str(self.size)
 
 class Node:
 	def __init__(self, x, y):

@@ -35,13 +35,13 @@ button_height = 1
 
 #Default settings.
 ##########
+max_size = 1000
 default_animation_speed = 1000
 default_maze_side_length = 200
 algorithm_options = [ # these options must match the generate_maze entries char for char.
 "depth first",
 "binary tree",
-"prims algorithm",
-"random walls (wont animate)"
+"prims algorithm"
 ]
 ##########
 
@@ -95,40 +95,18 @@ class App:
 		self.root.bind('<Return>', return_callback)
 		global item_count
 
-		helvetica_font = tkFont.Font(root = master, family='Helvetica', size=18, weight='bold')
-		default_font = helvetica_font
+		self.helvetica_font = tkFont.Font(root = master, family='Helvetica', size=18, weight='bold')
+		self.default_font = self.helvetica_font
 
-		if algorithm_selection_on: self.algorithm_selection, self.selected_algorithm, self.algorithm_selection_label = create_dropdown_menu(self.frame, default_font, "Generation Algorithm:", algorithm_options)
-		if animation_speed_entry_on: self.animation_speed_label, self.animation_speed_entry = create_text_entry(self.frame, default_font, 'Animation Speed (sqrs/s): ', str(default_animation_speed))
-		if maze_size_entry_on: self.maze_size_label, self.maze_size_entry = create_text_entry(self.frame, default_font, 'Maze side length', str(default_maze_side_length))
-		if generate_and_animate_button_on: self.generate_and_animate_button = Button(self.frame, default_font, 'Generate maze (animated)', self.generate_and_animate_maze)
+		if algorithm_selection_on: self.algorithm_selection, self.selected_algorithm, self.algorithm_selection_label = create_dropdown_menu(self.frame, self.default_font, "Generation Algorithm:", algorithm_options)
+		if animation_speed_entry_on: self.animation_speed_label, self.animation_speed_entry = create_text_entry(self.frame, self.default_font, 'Animation Speed (sqrs/s): ', str(default_animation_speed))
+		if maze_size_entry_on: self.maze_size_label, self.maze_size_entry = create_text_entry(self.frame, self.default_font, 'Maze side length', str(default_maze_side_length))
+		if generate_and_animate_button_on: self.generate_and_animate_button = Button(self.frame, self.default_font, 'Generate maze (animated)', self.generate_and_animate_maze)
 
-		self.maze = None # represents the Maze that is currently loaded.
+		self.maze = None
 
-	def generate_maze(self, speed=0, algorithm=None, max_size=1000):
-		maze_size = int(self.maze_size_entry.get()) % max_size # maze size in length of a side. max of 1000 b/c performance.
-		self.maze = Maze(maze_size) # default maze with a standard border
-
-		if algorithm is None:
-			text = self.selected_algorithm.get().lower()
-			if text == 'depth first':
-				algorithm = make_depth_first_maze
-			elif text == 'binary tree':
-				algorithm = make_binary_tree_maze
-			elif text == 'prims algorithm':
-				algorithm = make_prims_algorithm_maze
-			elif text == 'random walls (wont animate)':
-				algorithm = make_random_walls
-
-		algorithm(self.maze, self.frame, self.root, speed)
-
-	def display_maze(self):
-		if self.maze is None:
-			print('Cannot display a maze that does not exist.')
-			return
-
-		maze_window, drawing = make_maze_display(self.frame, self.root)
-		drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=blank_color)
+	def draw_whole_maze(self):
+		self.drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=blank_color)
 
 		for i in range(len(self.maze.slabs)):
 			for j in range(len(self.maze.slabs[i])):
@@ -137,7 +115,7 @@ class App:
 					x_f = ((j+1) / self.maze.size) * maze_length + offset
 					y_i = (i / self.maze.size) * maze_length + offset
 					y_f = y_i
-					drawing.create_line(x_i,y_i, x_f,y_f, fill=default_color, width=3)
+					self.drawing.create_line(x_i,y_i, x_f,y_f, fill=default_color, width=3)
 
 		for i in range(len(self.maze.columns)):
 			for j in range(len(self.maze.columns[i])):
@@ -146,21 +124,53 @@ class App:
 					x_f = x_i
 					y_i = (j / self.maze.size) * maze_length + offset
 					y_f = ((j+1) / self.maze.size) * maze_length + offset
-					drawing.create_line(x_i,y_i, x_f,y_f, fill=default_color, width=3)
+					self.drawing.create_line(x_i,y_i, x_f,y_f, fill=default_color, width=3)
+
 
 	def generate_and_animate_maze(self):
-		#animating = not int(self.animation_speed_entry.get()) == 0
-		#self.generate_maze(int(self.animation_speed_entry.get()))
-		#if not animating:
-		#	self.display_maze()
+		maze_size = int(self.maze_size_entry.get()) % max_size # maze size in length of a side. max of 1000 b/c performance.
+		self.maze = Maze(maze_size) # default maze with a standard border
 
-		# select algorithm
-		# initialize algorithm
-		# initialize drawing
-		# loop
-		# 	step
-		# 	animate start sqaure, stop square, and wall destruction
-		# 	pause
+		try:
+			speed = int(self.animation_speed_entry.get())
+		except ValueError:
+			speed = default_animation_speed
+
+		if speed == 0:
+			sleep_time = 0
+		else:
+			sleep_time = 1 / speed
+
+		animating = not speed == 0
+
+		algorithm = None
+
+		text = self.selected_algorithm.get().lower()
+		if text == 'depth first':
+			algorithm = DepthFirstMazeGenerator(self.maze)
+		elif text == 'binary tree':
+			algorithm = BinaryTreeMazeGenerator(self.maze)
+		elif text == 'prims algorithm':
+			algorithm = PrimsAlgorithmMazeGenerator(self.maze)
+
+		self.maze_window, self.drawing = make_maze_display(self.frame, self.root)
+
+		move = algorithm.step()
+
+		while move is not None:
+			if animating:
+				self.draw_move(move)
+			move = algorithm.step() # calling step repeatedly creates a bit of a slow down. But it's okay with me.
+			if animating:
+				pause(self.root, sleep_time)
+
+		if not animating:
+			self.draw_whole_maze()
+
+	def draw_move(self, move):
+		clear_out_cell(move.first, self.maze.size, self.drawing)
+		remove_wall(move.first, move.get_direction(), self.maze.size, self.drawing)
+		clear_out_cell(move.second, self.maze.size, self.drawing)
 
 def make_maze_display(frame, root):
 	maze_window = tk.Toplevel(frame)
@@ -224,7 +234,6 @@ def pause(root, t):
 def main():
 	root = tk.Tk()
 	root.wm_title('Maze Generation Application')
-	root.bind('<Control-c>', quit)
 	root.bind('<Control-q>', quit)
 	root.bind('<Control-w>', quit)
 	app = App(root)
@@ -232,50 +241,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
-
-
-
-# def make_depth_first_maze(maze, frame=None, root=None, speed=0): # TODO, change to MGAlgorithm child
-# 	animating = not speed == 0
-
-# 	if animating:
-# 		sleep_time = 1 / speed
-# 		maze_window, drawing = make_maze_display(frame, root)
-# 		clear_out_cell((0,0), maze.size, drawing)
-
-# 	# initial state: walls everywhere
-# 	fill_maze_all_walls(maze)
-
-# 	# Start in top-left corner. Have a stack for move-memory and a table for squares visited.
-# 	move_memory = [(0,0)]
-# 	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
-# 	visited[0][0] = True
-
-# 	while len(move_memory) > 0:
-
-# 		current_position = move_memory[-1]
-
-# 		move_options = find_unvisited_neighbors(current_position, visited)
-
-# 		if len(move_options) == 0:
-# 			move_memory.pop()
-# 			continue
-
-# 		move = choice(move_options)
-
-# 		# destroy wall
-# 		x = move_memory[-1][0]
-# 		y = move_memory[-1][1]
-# 		maze[x, y, move] = False
-
-# 		new_position = apply_move(current_position, move)
-
-# 		move_memory.append(new_position)
-
-# 		visited[new_position[0]][new_position[1]] = True
-
-# 		if animating:
-# 			remove_wall(current_position, move, maze.size, drawing)
-# 			clear_out_cell(new_position, maze.size, drawing)
-# 			pause(root, sleep_time)
