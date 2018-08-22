@@ -1,10 +1,4 @@
-##############################
-# Filename: generator.py
-# Author: Andrew J. Haeffner MIT EECS c/o 2021
-# Date: ~August 2018
-# Description: This is a maze generator written in python(3)!
-##############################
-
+""""""
 import tkinter as tk
 import tkinter.font as tkFont
 import sys
@@ -27,7 +21,7 @@ line_width = 5
 ##########
 maze_size_entry_on = True
 generate_and_animate_button_on = True
-algorithm_selection_on = True
+algo_select_on = True
 animation_speed_entry_on = True
 button_width = 24
 button_height = 1
@@ -38,7 +32,7 @@ button_height = 1
 max_size = 1000
 default_animation_speed = 1000
 default_maze_side_length = 200
-algorithm_options = [ # these options must match the generate_maze entries char for char.
+algorithm_options = [ # be careful with how these are spelled.
 "depth first",
 "binary tree",
 "prims algorithm"
@@ -58,7 +52,7 @@ class Button(tk.Button):
 def create_text_entry(master, f, t, default_text):
 	global item_count
 	label = tk.Label(master, font=f, text=t)
-	label.config(height=button_height, width=button_width) # follow button width. For now.
+	label.config(height=button_height, width=button_width)
 	label.grid(row=item_count, column=0)
 
 	entry = tk.Entry(master, font=f, width=button_width)
@@ -71,7 +65,7 @@ def create_text_entry(master, f, t, default_text):
 def create_dropdown_menu(master, f, label_text, options):
 	global item_count
 	label = tk.Label(master, font=f, text=label_text)
-	label.config(height=button_height, width=button_width) # follow button width. For now.
+	label.config(height=button_height, width=button_width)
 	label.grid(row=item_count, column=0)
 
 	var = tk.StringVar(master)
@@ -95,41 +89,72 @@ class App:
 		self.root.bind('<Return>', return_callback)
 		global item_count
 
-		self.helvetica_font = tkFont.Font(root = master, family='Helvetica', size=18, weight='bold')
+		self.helvetica_font = tkFont.Font(root = master,
+										  family='Helvetica', size=18,
+										  weight='bold')
+
 		self.default_font = self.helvetica_font
 
-		if algorithm_selection_on: self.algorithm_selection, self.selected_algorithm, self.algorithm_selection_label = create_dropdown_menu(self.frame, self.default_font, "Generation Algorithm:", algorithm_options)
-		if animation_speed_entry_on: self.animation_speed_label, self.animation_speed_entry = create_text_entry(self.frame, self.default_font, 'Animation Speed (sqrs/s): ', str(default_animation_speed))
-		if maze_size_entry_on: self.maze_size_label, self.maze_size_entry = create_text_entry(self.frame, self.default_font, 'Maze side length', str(default_maze_side_length))
-		if generate_and_animate_button_on: self.generate_and_animate_button = Button(self.frame, self.default_font, 'Generate maze (animated)', self.generate_and_animate_maze)
+		if algo_select_on:
+			self.algo_select, self.selected_algo, \
+			self.algo_select_label = create_dropdown_menu(
+				self.frame, self.default_font, "Generation Algorithm:",
+				algorithm_options
+				)
+
+		if animation_speed_entry_on:
+			self.animation_speed_label, self.animation_speed_entry \
+				= create_text_entry(self.frame, self.default_font,
+									'Animation Speed (sqrs/s): ',
+									str(default_animation_speed))
+
+		if maze_size_entry_on:
+			self.maze_size_label, self.maze_size_entry = \
+				create_text_entry(self.frame, self.default_font,
+								  'Maze side length',
+								  str(default_maze_side_length))
+
+		if generate_and_animate_button_on:
+			self.generate_and_animate_button = Button(
+				self.frame, self.default_font,
+				'Generate maze (animated)',
+				self.generate_and_animate_maze)
 
 		self.maze = None
 
 	def draw_whole_maze(self):
-		self.drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=blank_color)
+		self.drawing.create_rectangle(offset,offset,
+									  window_width+offset,
+									  window_height+offset,
+									  fill=blank_color)
 
 		for i in range(len(self.maze.slabs)):
 			for j in range(len(self.maze.slabs[i])):
 				if self.maze.slabs[i][j]:
-					x_i = (j / self.maze.size) * maze_length + offset
-					x_f = ((j+1) / self.maze.size) * maze_length + offset
-					y_i = (i / self.maze.size) * maze_length + offset
+					x_i = j / len(maze) * maze_length + offset
+					x_f = (j+1) / len(maze) * maze_length + offset
+					y_i = i / len(maze) * maze_length + offset
 					y_f = y_i
-					self.drawing.create_line(x_i,y_i, x_f,y_f, fill=default_color, width=3)
+					self.drawing.create_line(x_i,y_i, x_f,y_f,
+											 fill=default_color,
+											 width=3)
 
 		for i in range(len(self.maze.columns)):
 			for j in range(len(self.maze.columns[i])):
 				if self.maze.columns[i][j]:
-					x_i = i / self.maze.size  * maze_length + offset
+					x_i = i / len(maze)  * maze_length + offset
 					x_f = x_i
-					y_i = (j / self.maze.size) * maze_length + offset
-					y_f = ((j+1) / self.maze.size) * maze_length + offset
-					self.drawing.create_line(x_i,y_i, x_f,y_f, fill=default_color, width=3)
+					y_i = j / len(maze) * maze_length + offset
+					y_f = (j+1) / len(maze) * maze_length + offset
+					self.drawing.create_line(x_i,y_i, x_f,y_f,
+											 fill=default_color,
+											 width=3)
 
 
 	def generate_and_animate_maze(self):
-		maze_size = int(self.maze_size_entry.get()) % max_size # maze size in length of a side. max of 1000 b/c performance.
-		self.maze = Maze(maze_size) # default maze with a standard border
+		# limit maze size.
+		maze_size = int(self.maze_size_entry.get()) % max_size
+		self.maze = Maze(maze_size) # build a default maze.
 
 		try:
 			speed = int(self.animation_speed_entry.get())
@@ -145,7 +170,7 @@ class App:
 
 		algorithm = None
 
-		text = self.selected_algorithm.get().lower()
+		text = self.selected_algo.get().lower()
 		if text == 'depth first':
 			algorithm = DepthFirstMazeGenerator(self.maze)
 		elif text == 'binary tree':
@@ -153,24 +178,26 @@ class App:
 		elif text == 'prims algorithm':
 			algorithm = PrimsAlgorithmMazeGenerator(self.maze)
 
-		self.maze_window, self.drawing = make_maze_display(self.frame, self.root)
+		maze_window, drawing = make_maze_display(self.frame, self.root)
 
 		move = algorithm.step()
 
 		while move is not None:
 			if animating:
-				self.draw_move(move)
-			move = algorithm.step() # calling step repeatedly creates a bit of a slow down. But it's okay with me.
+				self.draw_move(move, drawing)
+			move = algorithm.step()
 			if animating:
 				pause(self.root, sleep_time)
 
 		if not animating:
 			self.draw_whole_maze()
 
-	def draw_move(self, move):
-		clear_out_cell(move.first, self.maze.size, self.drawing)
-		remove_wall(move.first, move.get_direction(), self.maze.size, self.drawing)
-		clear_out_cell(move.second, self.maze.size, self.drawing)
+	def draw_move(self, move, drawing):
+		clear_out_cell(move.first, self.maze.size, drawing)
+		remove_wall(move.first, move.get_direction(), self.maze.size,
+					drawing)
+		clear_out_cell(move.second, self.maze.size, drawing)
+
 
 def make_maze_display(frame, root):
 	maze_window = tk.Toplevel(frame)
@@ -182,10 +209,12 @@ def make_maze_display(frame, root):
 	maze_window.bind('<Control-w>', destroy)
 	maze_window.bind('<Control-q>', quit)
 
-	drawing = tk.Canvas(maze_window, width=window_width+2*offset, height=window_height+2*offset)
+	drawing = tk.Canvas(maze_window, width=window_width+2*offset,
+						height=window_height+2*offset)
 	drawing.grid()
 
-	drawing.create_rectangle(offset,offset, window_width+offset,window_height+offset, fill=default_color)
+	drawing.create_rectangle(offset,offset, window_width+offset,
+							 window_height+offset, fill=default_color)
 
 	return maze_window, drawing
 
@@ -199,7 +228,8 @@ def clear_out_cell(position, size, drawing):
 	y_i = (y / size) * maze_length + (line_width / 2) + offset
 	y_f = ((y+1) / size) * maze_length - (line_width / 2) + offset
 
-	drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,outline=blank_color)
+	drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,
+							 outline=blank_color)
 
 def remove_wall(position, move, size, drawing):
 	x = position[0]
@@ -211,7 +241,8 @@ def remove_wall(position, move, size, drawing):
 
 		y_i = (y / size) * maze_length + offset
 		y_f = y_i
-		drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
+		drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color,
+							width=line_width)
 
 	if move == 'S': remove_wall((x,y+1), 'N', size, drawing)
 
@@ -223,7 +254,8 @@ def remove_wall(position, move, size, drawing):
 
 		y_i = (y / size) * maze_length + line_crawl + offset
 		y_f = ((y+1) / size) * maze_length - line_crawl + 1 + offset
-		drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color, width=line_width)
+		drawing.create_line(x_i,y_i, x_f,y_f, fill=blank_color,
+							width=line_width)
 
 	if move == 'E': remove_wall((x+1,y), 'W', size, drawing)
 
