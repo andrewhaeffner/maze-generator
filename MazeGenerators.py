@@ -1,36 +1,50 @@
+"""
+MazeGenerators package contains all things for making Mazes.
+"""
 from random import choice, random
 
-def fill_maze_no_inner_walls(maze):
-	maze.slabs = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
-	maze.columns = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
-
-	maze.slabs[0] = [True for i in range(len(maze))]
-	maze.slabs[-1] = [True for i in range(len(maze))]
-
-	maze.columns[0] = [True for i in range(len(maze))]
-	maze.columns[-1] = [True for i in range(len(maze))]
-
-def fill_maze_all_walls(maze):
-	for row in maze.slabs:
-		for i in range(len(row)):
-			row[i] = True
-	for row in maze.columns:
-		for i in range(len(row)):
-			row[i] = True
-
 class Maze:
-	# The maze wasn't meant for you.
+	"""Represents a square Maze, its cells, walls, and all."""
+
 	def __init__(self, size=0, generation_func=fill_maze_no_inner_walls):
+		"""
+		Initialize Maze object.
+
+		Args:
+			size (int) -- The side length of the maze (default: 0).
+			generation_func (method) -- The method that will be called to set the initial
+				state of the maze (default: fill_maze_no_inner_walls).
+		"""
 		self.size = size
+		self.slabs = None # Represents horizontal cell borders.
+		self.columns = None # Represents vertical cell borders.
+
 		generation_func(self)
 
 	def __getitem__(self, key):
+		"""
+		Compute and return a dict containing info on the borders around a cell.
+
+		Args:
+			key (int, int) -- Indicates the cell location.
+
+		Returns:
+			A dictionary. For each side of the cell, True indicates the presence
+			of a wall and False the lack thereof.
+		"""
 		x = key[0]
 		y = key[1]
 		return {'N':self.slabs[y][x], 'S':self.slabs[y+1][x],
 				'W':self.columns[x][y], 'E':self.columns[x+1][y] }
 
 	def __setitem__(self, key, value):
+		"""
+		Set the existence of a wall to value.
+
+		Args:
+			key (int, int, str) -- Indicates cell location and direction of a border.
+			value (bool) -- The value that the border will take on.
+		"""
 		x = key[0]
 		y = key[1]
 		letter = key[2]
@@ -41,6 +55,7 @@ class Maze:
 		elif letter == 'E': self.columns[x+1][y] = value
 
 	def __str__(self):
+		"""Return a string representation of the maze."""
 		result = []
 
 		for i in range(self.size + 1):
@@ -75,26 +90,90 @@ class Maze:
 		return '\n'.join(result)
 
 	def __len__(self):
+		"""Return the side length of the maze."""
 		return self.size
 
 	def __repr__(self):
+		"""Return a representation of the maze."""
 		return 'Maze Object with side length ' + str(self.size)
 
+def fill_maze_no_inner_walls(maze):
+	"""Fill maze with just outer walls."""
+	maze.slabs = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
+	maze.columns = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
+
+	maze.slabs[0] = [True for i in range(len(maze))]
+	maze.slabs[-1] = [True for i in range(len(maze))]
+
+	maze.columns[0] = [True for i in range(len(maze))]
+	maze.columns[-1] = [True for i in range(len(maze))]
+
+def fill_maze_all_walls(maze):
+	"""Fill maze with all possible walls."""
+	for row in maze.slabs:
+		for i in range(len(row)):
+			row[i] = True
+	for row in maze.columns:
+		for i in range(len(row)):
+			row[i] = True
+
 class Node:
+	"""A Node represents a location with x,y coordinates."""
+
 	def __init__(self, x, y):
+		"""
+		Initialize Node object.
+
+		Args:
+			x (int) -- x coordinate.
+			y (int) -- y coordinate.
+		"""
 		self.x = x
 		self.y = y
 
 	def __eq__(self, other):
+		"""
+		Evaluate whether or not two nodes are equivalent.
+
+		Args:
+			other (Node) -- Node to be compared.
+
+		Returns:
+			bool that indicates whether or not self and other are
+			equivalent in their x and y values.
+		"""
 		return self.x == other.x and self.y == other.y
+
 	def __getitem__(self, key):
+		"""
+		Return x or y value of Node.
+
+		Args:
+			key (int) -- Indication of x or y coordinate (0 or 1).
+
+		Returns:
+			int that is the desired coordinate value.
+		"""
 		if key == 0: return self.x
 		elif key == 1: return self.y
 		raise KeyError("Key:", key, " not recognized. Try [0] or [1].")
+
 	def __str__(self):
+		"""Return string representation of Node."""
 		return "(" + str(self.x) + "," + str(self.y) + ")"
 
 	def move_to(self, direction):
+		"""
+		Create and return a Node that is one space over from the
+		self Node, in the direction desired.
+
+		Args:
+			direction (str) -- Cardinal direction that the new Node will
+			be created in.
+
+		Returns:
+			A Node that is one space over in the desired direction.
+		"""
 		x = self.x
 		y = self.y
 
@@ -106,28 +185,74 @@ class Node:
 		return Node(x,y)
 
 	def copy(self):
+		"""Return copy of Node."""
 		return Node(self.x, self.y)
 
 class Edge:
+	"""Represents an edge between two Nodes."""
+
 	def __init__(self, first, second, weight=None):
+		"""
+		Initialize Edge object.
+
+		Args:
+			first (Node) -- The first node in the Edge.
+			second (Node) -- The second node in the Edge.
+			weight (int) -- The weight of the edge (default: None).
+		"""
 		self.first = first
 		self.second = second
 		self.weight = weight
 
 	def __contains__(self, item):
+		"""
+		Determine whether or not item is a member of Edge.
+
+		Args:
+			item (Node) -- Node to search for in the Edge.
+
+		Returns:
+			bool indicating whether or not item is a member of Edge.
+		"""
 		return self.first == item or self.second == item
 
 	def __eq__(self, other):
+		"""
+		Determine whether or not self and other are equivalent edges,
+		without regard for Node order.
+
+		Args:
+			other (Edge) -- The Edge self will be compared to.
+
+		Returns:
+			bool indicating whether or not the two edges are equivalent.
+		"""
 		return (self.first == other.first and self.second == other.second) or (self.first == other.second and self.second == other.first)
 
 	def __lt__(self, other):
+		"""
+		Determine whether or not self has a lower weight than other.
+
+		Args:
+			other (Edge) -- Edge that will have its weight compared to that of self.
+
+		Returns:
+			bool indicating whether or not self has a lower weight than other.
+		"""
 		return self.weight < other.weight
 
 	def __str__(self):
+		"""Return string representation of Edge."""
 		return str(self.first) + "-->" + str(self.second)
 
 	def get_direction(self):
-		result = None # a None result indicates not an adjacent edge.
+		"""
+		Determine the cardinal direction that Edge points in.
+
+		Returns:
+			str indicating the cardinal direction that Edge points in.
+		"""
+		result = None
 		if self.second.y > self.first.y:
 			result = 'S'
 		elif self.second.y < self.first.y:
@@ -139,6 +264,16 @@ class Edge:
 		return result
 
 def find_unvisited_neighbors(pos, visited):
+	"""
+	Determine all unvisited neighbors for a position.
+
+	Args:
+		pos (Node) -- The position around which neighbors will be searched for.
+		visited ([bool][bool]) -- A 2D bool table indicating visited Nodes.
+
+	Returns:
+		list of str's indicating which cardinal directions have unvisited Nodes.
+	"""
 	size = len(visited)
 	good_neighbors = []
 
