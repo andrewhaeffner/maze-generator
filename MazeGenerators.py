@@ -1,16 +1,14 @@
-from random import choice
+from random import choice, random
 
-def gen_maze_no_inner_walls(size): # TODO - change to fill_maze_no_inner_walls .. And change arg to maze and mutate maze.
-	slabs = [[False for i in range(size)] for j in range(size+1)]
-	columns = [[False for i in range(size)] for j in range(size+1)]
+def fill_maze_no_inner_walls(maze):
+	maze.slabs = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
+	maze.columns = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
 
-	slabs[0] = [True for i in range(size)]
-	slabs[-1] = [True for i in range(size)]
+	maze.slabs[0] = [True for i in range(len(maze))]
+	maze.slabs[-1] = [True for i in range(len(maze))]
 
-	columns[0] = [True for i in range(size)]
-	columns[-1] = [True for i in range(size)]
-
-	return slabs, columns
+	maze.columns[0] = [True for i in range(len(maze))]
+	maze.columns[-1] = [True for i in range(len(maze))]
 
 def fill_maze_all_walls(maze):
 	for row in maze.slabs:
@@ -92,9 +90,21 @@ class Node:
 		return self.x == other.x and self.y == other.y
 	def __getitem__(self, key):
 		if key == 0: return self.x
-		return self.y
+		elif key == 1: return self.y
+		raise KeyError("Key:", key, " not recognized. Try [0] or [1].")
 	def __str__(self):
 		return "(" + str(self.x) + "," + str(self.y) + ")"
+
+	def move_to(self, direction):
+		x = self.x
+		y = self.y
+
+		if direction == 'N': y -= 1
+		elif direction == 'S': y += 1
+		elif direction == 'W': x -= 1
+		elif direction == 'E': x += 1
+
+		return Node(x,y)
 
 	def copy(self):
 		return Node(self.x, self.y)
@@ -117,33 +127,38 @@ class Edge:
 	def __str__(self):
 		return str(self.first) + "-->" + str(self.second)
 
-def get_move(start, finish): # TODO, merge with Edge functionality. Change args to self.
-	char = 'error in get move'
-	if finish.y > start.y:
-		char = 'S'
-	elif finish.y < start.y:
-		char = 'N'
-	elif finish.x > start.x:
-		char = 'E'
-	elif finish.x < start.x:
-		char = 'W'
-	return char
+	def get_direction(self):
+		result = None # a None result indicates not an adjacent edge.
+		if self.second.y > self.first.y:
+			result = 'S'
+		elif self.second.y < self.first.y:
+			result = 'N'
+		elif self.second.x > self.first.x:
+			result = 'E'
+		elif self.second.x < self.first.x:
+			result = 'W'
+		return result
 
-def apply_move(current_position, move): # TODO, consider in relation to Node and Edge. Simplify.
-	x = current_position.x
-	y = current_position.y
+def find_unvisited_neighbors(pos, visited):
+	size = len(visited)
+	good_neighbors = []
 
-	if move == 'N': y -= 1
-	elif move == 'S': y += 1
-	elif move == 'W': x -= 1
-	elif move == 'E': x += 1
+	# Check for the edge cases and check if the square in that direction
+	# has been visited or not. If not, add it to the list of good_neighbors.
+	if pos.x > 0 and not visited[pos.x - 1][pos.y]: good_neighbors.append('W')
+	if pos.x < size - 1 and not visited[pos.x + 1][pos.y]: good_neighbors.append('E')
+	if pos.y > 0 and not visited[pos.x][pos.y - 1]: good_neighbors.append('N')
+	if pos.y < size - 1 and not visited[pos.x][pos.y + 1]: good_neighbors.append('S')
 
-	return Node(x, y)
+	return good_neighbors
 
 class MGAlgorithm:
 	def __init__(self, maze):
-		self.starting_square = Node(0,0)
-	def step(self, maze):
+		self.maze = maze
+		fill_maze_all_walls(self.maze)
+		self.visited = [[False for j in range(self.maze.size)] for i in range(self.maze.size)]
+
+	def step(self):
 		return None # or return an edge.
 
 class PriorityQueue:
@@ -202,15 +217,16 @@ class PriorityQueue:
 			self.queue[child] = temp
 			self.percolate_down(child)
 
-
 class DepthFirstMazeGenerator(MGAlgorithm):
 	def __init__(self, maze):
-		self.maze = maze
-		fill_maze_all_walls(self.maze)
+		# make a super call !!!!!!!!!!!!!!!
+		super().__init__(maze)
 
-		self.move_memory = [(0,0)]
-		self.visited = [[False for j in range(self.maze.size)] for i in range(self.maze.size)]
-		self.visited[0][0] = True
+		self.start = Node(0,0)
+
+		self.visited[self.start.x][self.start.y] = True
+
+		self.move_memory = [self.start.copy()]
 
 	def step(self):
 		while True:
@@ -225,11 +241,11 @@ class DepthFirstMazeGenerator(MGAlgorithm):
 				self.move_memory.pop()
 				continue
 
-			move = choice(move_options)
+			direction = choice(move_options)
 
-			self.maze[current_position.x, current_position.y, move] = False
+			self.maze[current_position.x, current_position.y, direction] = False
 
-			new_position = apply_move(current_position, move)
+			new_position = current_position.move_to(direction)
 
 			self.move_memory.append(new_position)
 
@@ -239,23 +255,22 @@ class DepthFirstMazeGenerator(MGAlgorithm):
 
 class BinaryTreeMazeGenerator(MGAlgorithm):
 	def __init__(self, maze):
-		self.maze = maze
-		fill_maze_all_walls(self.maze)
-		self.starting_square = Node(0, self.maze.size-1)
-
-		self.visited = [[False for j in range(maze.size)] for i in range(maze.size)]
+		# make a super call !!!!!!!!!
+		super().__init__(maze)
 
 
 		self.root_position = Node(0, self.maze.size-1)
 		self.wandering_position = self.root_position.copy()
 		self.finished = False
-		self.traversing = False
+		self.traversing = True
 
 	def traverse(self):
-		x = self.wandering_position[x]
-		y = self.wandering_position[y]
+		x = self.wandering_position.x
+		y = self.wandering_position.y
 		if self.visited[x][y]:
 			return None
+
+		self.visited[x][y] = True
 
 		options = ['N', 'W']
 		if y == 0: options.remove('N')
@@ -267,7 +282,7 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 		direction = choice(options)
 		self.maze[x, y, direction] = False # remove wall
 
-		new_position = apply_move(self.wandering_position, direction)
+		new_position = self.wandering_position.move_to(direction)
 		result = Edge(self.wandering_position, new_position)
 		self.wandering_position = new_position
 
@@ -275,7 +290,7 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 
 	def increment(self):
 		self.root_position.x += 1
-		if self.root_position.x >= len(self.maze):
+		if self.root_position.x >= self.maze.size:
 			self.root_position.x = 0
 			self.root_position.y -= 1
 
@@ -284,14 +299,14 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 		if self.finished:
 			return None
 
-		While True:
+		while True:
 			if not self.traversing:
 				self.increment()
-				wandering_position = root_position.copy()
-				if root_position.y < 0:
+				self.wandering_position = self.root_position.copy()
+				if self.root_position.y < 0:
 					self.finished = True
 					return None
-				traversing = True
+				self.traversing = True
 
 			move = self.traverse()
 			if move is not None:
@@ -299,161 +314,36 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 
 			self.traversing = False
 
-
-def make_random_walls(maze, frame=None, root=None, speed=0): # TODO, change to MGAlgorithm child.
-	for sequence in maze.slabs:
-		for i in range(len(sequence)):
-			if random_bool():
-				sequence[i] = True
-
-	for sequence in maze.columns:
-		for i in range(len(sequence)):
-			if random_bool():
-				sequence[i] = True
-
-def random_bool():
-	return random() > .5
-
-def random_integer(max): # TODO, remove
-	return int(random() * max) + 1
-
-def find_unvisited_neighbors(current_position, visited):
-	x_i = current_position[0]
-	y_i = current_position[1]
-	size = len(visited)
-	good_neighbors = []
-
-	# Check for the edge cases and check if the square in that direction
-	# has been visited or not. If not, add it to the list of good_neighbors.
-	if x_i > 0 and not visited[x_i - 1][y_i]: good_neighbors.append('W')
-	if x_i < size - 1 and not visited[x_i + 1][y_i]: good_neighbors.append('E')
-	if y_i > 0 and not visited[x_i][y_i - 1]: good_neighbors.append('N')
-	if y_i < size - 1 and not visited[x_i][y_i + 1]: good_neighbors.append('S')
-
-	return good_neighbors
-
-def make_depth_first_maze(maze, frame=None, root=None, speed=0): # TODO, change to MGAlgorithm child
-	animating = not speed == 0
-
-	if animating:
-		sleep_time = 1 / speed
-		maze_window, drawing = make_maze_display(frame, root)
-		clear_out_cell((0,0), maze.size, drawing)
-
-	# initial state: walls everywhere
-	fill_maze_all_walls(maze)
-
-	# Start in top-left corner. Have a stack for move-memory and a table for squares visited.
-	move_memory = [(0,0)]
-	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
-	visited[0][0] = True
-
-	while len(move_memory) > 0:
-
-		current_position = move_memory[-1]
-
-		move_options = find_unvisited_neighbors(current_position, visited)
-
-		if len(move_options) == 0:
-			move_memory.pop()
-			continue
-
-		move = choice(move_options)
-
-		# destroy wall
-		x = move_memory[-1][0]
-		y = move_memory[-1][1]
-		maze[x, y, move] = False
-
-		new_position = apply_move(current_position, move)
-
-		move_memory.append(new_position)
-
-		visited[new_position[0]][new_position[1]] = True
-
-		if animating:
-			remove_wall(current_position, move, maze.size, drawing)
-			clear_out_cell(new_position, maze.size, drawing)
-			pause(root, sleep_time)
-
-def make_binary_tree_maze(maze, frame=None, root=None, speed=0): # TODO, change to MGAlgorithm child
-	animating = not speed == 0
-
-	if animating:
-		sleep_time = 1 / speed
-		maze_window, drawing = make_maze_display(frame, root)
-
-	def traverse(x, y):
-		if not visited[x][y]:
-
-			visited[x][y] = True
-
-			if animating: clear_out_cell((x,y), maze.size, drawing)
-
-			options = ['N', 'W']
-			if y == 0: options.remove('N')
-			if x == 0: options.remove('W')
-
-			if len(options) == 0: return # i.e.: top left corner has been reached.
-
-			direction = choice(options)
-			maze[x, y, direction] = False
-
-			if animating:
-				remove_wall((x,y), direction, maze.size, drawing)
-				pause(root, sleep_time)
-
-			new_position = apply_move((x,y), direction)
-			traverse(new_position[0], new_position[1]) # recurse, going along the path.
-
-	# initial state: walls everywhere
-	fill_maze_all_walls(maze)
+class PrimsAlgorithmMazeGenerator(MGAlgorithm):
+	def __init__(self, maze):
+		super().__init__(maze)
 
 
-	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
+		self.start = Node(self.maze.size // 2, self.maze.size // 2)
 
-	# Traverse every single square iteratively.
-	for i in range(maze.size-1, -1, -1):
-		for j in range(0, maze.size, 1):
-			traverse(j,i)
+		max = 1000
+		self.queue = PriorityQueue()
 
-def make_prims_algorithm_maze(maze, frame=None, root=None, speed=0): # TODO, change to MGAlgorithm child
-	animating = not speed == 0
-	if animating:
-		sleep_time = 1 / speed
-		maze_window, drawing = make_maze_display(frame, root)
+		random_integer = lambda max : int(random() * max) + 1
 
-	fill_maze_all_walls(maze)
+		self.create_weighted_edges = lambda position : [Edge(position, position.move_to(direction), random_integer(max)) for direction in find_unvisited_neighbors(position, self.visited)]
 
-	visited = [[False for j in range(maze.size)] for i in range(maze.size)]
+		self.visited[self.start.x][self.start.y] = True
+		self.queue.insert(self.create_weighted_edges(self.start))
 
-	max = 1000
 
-	queue = PriorityQueue()
-	create_weighted_edges = lambda position, visited : [Edge(position, apply_move(position, direction), random_integer(max)) for direction in find_unvisited_neighbors(position, visited)]
+	def step(self):
+		while True:
+			if len(self.queue) == 0:
+				return None
+			move = self.queue.get_min()
+			if self.visited[move.second.x][move.second.y]:
+				continue
 
-	start = Node(maze.size // 2, maze.size // 2)
-	visited[start.x][start.y] = True
-	queue.insert(create_weighted_edges(start, visited))
+			self.visited[move.second.x][move.second.y] = True
+			self.maze[move.first.x, move.first.y, move.get_direction()] = False # remove wall
 
-	if animating: clear_out_cell(start, maze.size, drawing)
+			neighbors = self.create_weighted_edges(move.second)
+			self.queue.insert(neighbors)
 
-	while len(queue) > 0:
-		move = queue.get_min()
-
-		if visited[move.second.x][move.second.y]:
-			continue
-
-		move_direction = get_move(move.first, move.second)
-
-		visited[move.second.x][move.second.y] = True
-		maze[move.first.x, move.first.y, move_direction] = False # remove wall
-
-		neighbors = create_weighted_edges(move.second, visited)
-		queue.insert(neighbors)
-
-		if animating:
-			clear_out_cell(move.second, maze.size, drawing)
-			remove_wall(move.first, move_direction, maze.size, drawing)
-			pause(root, sleep_time)
-
+			return move
