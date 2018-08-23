@@ -1,36 +1,50 @@
-"""
-MazeGenerators package contains all things for making Mazes.
-"""
+"""MazeGenerators package contains all things for making Mazes."""
 from random import choice, random
+
+def fill_maze_no_inner_walls(maze):
+	"""Fill maze with just outer walls."""
+	maze.slabs = [[False for i in range(len(maze))]
+				   for j in range(len(maze)+1)]
+
+	maze.columns = [[False for i in range(len(maze))]
+					 for j in range(len(maze)+1)]
+
+	maze.slabs[0] = [True for i in range(len(maze))]
+	maze.slabs[-1] = [True for i in range(len(maze))]
+
+	maze.columns[0] = [True for i in range(len(maze))]
+	maze.columns[-1] = [True for i in range(len(maze))]
 
 class Maze:
 	"""Represents a square Maze, its cells, walls, and all."""
 
-	def __init__(self, size=0, generation_func=fill_maze_no_inner_walls):
+	def __init__(self, size=0, gen_func=fill_maze_no_inner_walls):
 		"""
 		Initialize Maze object.
 
 		Args:
 			size (int) -- The side length of the maze (default: 0).
-			generation_func (method) -- The method that will be called to set the initial
-				state of the maze (default: fill_maze_no_inner_walls).
+			gen_func (method) -- The method that will be called to set
+			the initial state of the maze
+			(default: fill_maze_no_inner_walls).
 		"""
 		self.size = size
 		self.slabs = None # Represents horizontal cell borders.
 		self.columns = None # Represents vertical cell borders.
 
-		generation_func(self)
+		gen_func(self)
 
 	def __getitem__(self, key):
 		"""
-		Compute and return a dict containing info on the borders around a cell.
+		Compute and return a dict containing info on the borders around
+		a cell.
 
 		Args:
 			key (int, int) -- Indicates the cell location.
 
 		Returns:
-			A dictionary. For each side of the cell, True indicates the presence
-			of a wall and False the lack thereof.
+			A dictionary. For each side of the cell, True indicates the
+			presence of a wall and False the lack thereof.
 		"""
 		x = key[0]
 		y = key[1]
@@ -42,7 +56,8 @@ class Maze:
 		Set the existence of a wall to value.
 
 		Args:
-			key (int, int, str) -- Indicates cell location and direction of a border.
+			key (int, int, str) -- Indicates cell location and direction
+			of a border.
 			value (bool) -- The value that the border will take on.
 		"""
 		x = key[0]
@@ -96,17 +111,6 @@ class Maze:
 	def __repr__(self):
 		"""Return a representation of the maze."""
 		return 'Maze Object with side length ' + str(self.size)
-
-def fill_maze_no_inner_walls(maze):
-	"""Fill maze with just outer walls."""
-	maze.slabs = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
-	maze.columns = [[False for i in range(len(maze))] for j in range(len(maze)+1)]
-
-	maze.slabs[0] = [True for i in range(len(maze))]
-	maze.slabs[-1] = [True for i in range(len(maze))]
-
-	maze.columns[0] = [True for i in range(len(maze))]
-	maze.columns[-1] = [True for i in range(len(maze))]
 
 def fill_maze_all_walls(maze):
 	"""Fill maze with all possible walls."""
@@ -293,7 +297,8 @@ class MGAlgorithm:
 		"""Initialize MGAlgorithm object."""
 		self.maze = maze
 		fill_maze_all_walls(self.maze)
-		self.visited = [[False for j in range(self.maze.size)] for i in range(self.maze.size)]
+		self.visited = [[False for j in range(len(maze))]
+						 for i in range(len(maze))]
 
 	def step(self):
 		"""
@@ -358,7 +363,7 @@ class PriorityQueue:
 		"""Return the highest priority item & keep heap property."""
 		return self.pop(0)
 
-	def percolate_up(self, index): # TODO: change to iterative percolate
+	def percolate_up(self, index): # TODO: change to iterative.
 		"""
 		Compare the item at index to its parent and switch it with
 		its parent if it his higher priority, continuing to percolate
@@ -376,12 +381,12 @@ class PriorityQueue:
 			self.queue[index // 2] = temp
 			self.percolate_up(index // 2)
 
-	def percolate_down(self, index): # TODO: change to iterative percolate
+	def percolate_down(self, index): # TODO: change to iterative.
 		"""
 		Compare the item at index to its children and switch it with
 		the highest priority child if that child is of higher priority
-		than the item at index, and thus continuing until it is a parent
-		that has no higher priority children.
+		than the item at index, and thus continuing until it is a
+		parent that has no higher priority children.
 		"""
 		current = self.queue[index]
 
@@ -434,9 +439,10 @@ class DepthFirstMazeGenerator(MGAlgorithm):
 			if len(self.move_memory) == 0:
 				return None
 
-			current_position = self.move_memory[-1]
+			curr_pos = self.move_memory[-1]
 
-			move_options = find_unvisited_neighbors(current_position, self.visited)
+			move_options = find_unvisited_neighbors(curr_pos,
+													self.visited)
 
 			if len(move_options) == 0:
 				self.move_memory.pop()
@@ -444,15 +450,15 @@ class DepthFirstMazeGenerator(MGAlgorithm):
 
 			direction = choice(move_options)
 
-			self.maze[current_position.x, current_position.y, direction] = False
+			self.maze[curr_pos.x, curr_pos.y, direction] = False
 
-			new_position = current_position.move_to(direction)
+			new_position = curr_pos.move_to(direction)
 
 			self.move_memory.append(new_position)
 
 			self.visited[new_position.x][new_position.y] = True
 
-			return Edge(current_position, new_position)			
+			return Edge(curr_pos, new_position)
 
 class BinaryTreeMazeGenerator(MGAlgorithm):
 	"""
@@ -554,9 +560,12 @@ class PrimsAlgorithmMazeGenerator(MGAlgorithm):
 		max = 1000
 		self.queue = PriorityQueue()
 
-		random_integer = lambda max : int(random() * max) + 1
+		random_int = lambda max : int(random() * max) + 1
 
-		self.create_weighted_edges = lambda position : [Edge(position, position.move_to(direction), random_integer(max)) for direction in find_unvisited_neighbors(position, self.visited)]
+		self.create_weighted_edges = lambda pos : \
+			[Edge(pos, pos.move_to(direction), random_int(max))
+			 for direction in find_unvisited_neighbors(pos,
+													   self.visited)]
 
 		self.visited[self.start.x][self.start.y] = True
 		self.queue.insert(self.create_weighted_edges(self.start))
@@ -573,13 +582,16 @@ class PrimsAlgorithmMazeGenerator(MGAlgorithm):
 			if len(self.queue) == 0:
 				return None
 			move = self.queue.get_min()
-			if self.visited[move.second.x][move.second.y]:
+			first = move.first
+			second = move.second
+
+			if self.visited[second.x][second.y]:
 				continue
 
-			self.visited[move.second.x][move.second.y] = True
-			self.maze[move.first.x, move.first.y, move.get_direction()] = False # remove wall
+			self.visited[second.x][second.y] = True
+			self.maze[first.x, first.y, move.get_direction()] = False
 
-			neighbors = self.create_weighted_edges(move.second)
+			neighbors = self.create_weighted_edges(second)
 			self.queue.insert(neighbors)
 
 			return move

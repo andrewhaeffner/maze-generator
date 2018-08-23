@@ -243,10 +243,10 @@ class App:
 			move (Edge) -- The edge to be drawn
 			drawing (tk.Toplevel) -- The canvas to be drawn on.
 		"""
-		clear_out_cell(move.first, len(maze), drawing)
-		remove_wall(move.first, move.get_direction(), len(maze),
+		clear_out_cell(move.first, len(self.maze), drawing)
+		remove_wall(move.first, move.get_direction(), len(self.maze),
 					drawing)
-		clear_out_cell(move.second, len(maze), drawing)
+		clear_out_cell(move.second, len(self.maze), drawing)
 
 
 def make_maze_display(frame):
