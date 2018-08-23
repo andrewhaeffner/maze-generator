@@ -287,19 +287,44 @@ def find_unvisited_neighbors(pos, visited):
 	return good_neighbors
 
 class MGAlgorithm:
+	"""Template class for Maze Generation Algorithms."""
+
 	def __init__(self, maze):
+		"""Initialize MGAlgorithm object."""
 		self.maze = maze
 		fill_maze_all_walls(self.maze)
 		self.visited = [[False for j in range(self.maze.size)] for i in range(self.maze.size)]
 
 	def step(self):
+		"""
+		Remove one wall and visit a new square on the maze.
+
+		Returns:
+			None. Should return None or an Edge in an extended class.
+		"""
 		return None # or return an edge.
 
 class PriorityQueue:
+	"""
+	Queue that always pops the highest priority item in the queue.
+
+	Implementation Description:
+		This priority queue uses a binary heap abstarcted over a
+		dynamic list. Using the insert, get_min, and pop methods
+		allow the queue to maintain the heap property.
+	"""
+
 	def __init__(self):
+		"""Initialize PriorityQueue."""
 		self.queue = [None]
 
 	def insert(self, item):
+		"""
+		Insert item into the queue and maintain the heap property.
+
+		Args:
+			item -- any object that can be ordered with another object.
+		"""
 		if type(item) is not list:
 			self.insert([item])
 			return
@@ -308,6 +333,16 @@ class PriorityQueue:
 			self.percolate_up(len(self))
 
 	def pop(self, index):
+		"""
+		Remove item at index, maintain heap property, and return the
+		item.
+
+		Args:
+			index (int) -- Indicates the index of the item to remove.
+
+		Returns:
+			item of arbitary type.
+		"""
 		result = self.queue.pop(index+1)
 		if len(self) - index > 1:
 			self.queue.insert(index+1, self.queue.pop(len(self)))
@@ -316,12 +351,20 @@ class PriorityQueue:
 		return result
 
 	def __len__(self):
+		"""Return the number of items in the queue."""
 		return len(self.queue) - 1
 
 	def get_min(self):
+		"""Return the highest priority item & keep heap property."""
 		return self.pop(0)
 
-	def percolate_up(self, index): # change to iterative percolate
+	def percolate_up(self, index): # TODO: change to iterative percolate
+		"""
+		Compare the item at index to its parent and switch it with
+		its parent if it his higher priority, continuing to percolate
+		up until it is either the highest priority item or its parent
+		has a higher priority.
+		"""
 		if index == 1:
 			return
 
@@ -333,7 +376,13 @@ class PriorityQueue:
 			self.queue[index // 2] = temp
 			self.percolate_up(index // 2)
 
-	def percolate_down(self, index): # change to iterative percolate
+	def percolate_down(self, index): # TODO: change to iterative percolate
+		"""
+		Compare the item at index to its children and switch it with
+		the highest priority child if that child is of higher priority
+		than the item at index, and thus continuing until it is a parent
+		that has no higher priority children.
+		"""
 		current = self.queue[index]
 
 		if index > len(self) / 2:
@@ -352,8 +401,19 @@ class PriorityQueue:
 			self.percolate_down(child)
 
 class DepthFirstMazeGenerator(MGAlgorithm):
+	"""
+	Maze generation algorithm that uses a randomized depth
+	first search.
+	"""
+
 	def __init__(self, maze):
-		# make a super call !!!!!!!!!!!!!!!
+		"""
+		Initialize DepthFirstMazeGenerator.
+
+		Args:
+			maze (Maze) -- The maze object that will be turned into a
+			a maze by the algorithm.
+		"""
 		super().__init__(maze)
 
 		self.start = Node(0,0)
@@ -363,6 +423,13 @@ class DepthFirstMazeGenerator(MGAlgorithm):
 		self.move_memory = [self.start.copy()]
 
 	def step(self):
+		"""
+		Determines a random square to move to from its current
+		position.
+
+		Returns:
+			Edge corresponding to the step that is taken.
+		"""
 		while True:
 			if len(self.move_memory) == 0:
 				return None
@@ -388,8 +455,18 @@ class DepthFirstMazeGenerator(MGAlgorithm):
 			return Edge(current_position, new_position)			
 
 class BinaryTreeMazeGenerator(MGAlgorithm):
+	"""
+	Maze generation algorithm that creates a binary branching tree.
+	"""
+
 	def __init__(self, maze):
-		# make a super call !!!!!!!!!
+		"""
+		Initialize BinaryTreeMazeGenerator.
+
+		Args:
+			maze (Maze) -- The maze that will be mutated into an actual
+			maze by the algorithm.
+		"""
 		super().__init__(maze)
 
 
@@ -399,6 +476,7 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 		self.traversing = True
 
 	def traverse(self):
+		"""Create an exit from the current position to left or top."""
 		x = self.wandering_position.x
 		y = self.wandering_position.y
 		if self.visited[x][y]:
@@ -423,6 +501,7 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 		return result
 
 	def increment(self):
+		"""Shift the root_position by 1 and handling overflow."""
 		self.root_position.x += 1
 		if self.root_position.x >= self.maze.size:
 			self.root_position.x = 0
@@ -430,6 +509,12 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 
 
 	def step(self):
+		"""
+		Determine an unvisited square and create a path out of it.
+
+		Returns:
+			Edge corresponding to the step that is taken.
+		"""
 		if self.finished:
 			return None
 
@@ -449,7 +534,18 @@ class BinaryTreeMazeGenerator(MGAlgorithm):
 			self.traversing = False
 
 class PrimsAlgorithmMazeGenerator(MGAlgorithm):
+	"""
+	Maze generation Algorithm based off of Prim's (Greedy) Algorithm.
+	"""
+
 	def __init__(self, maze):
+		"""
+		Initialize PrimsAlgorithmGenerator.
+
+		Args:
+			maze (Maze) -- The maze that will be mutated into an actual
+			maze by the algorithm.
+		"""
 		super().__init__(maze)
 
 
@@ -467,6 +563,12 @@ class PrimsAlgorithmMazeGenerator(MGAlgorithm):
 
 
 	def step(self):
+		"""
+		Determines the lowest weight edge and moves to it.
+
+		Returns:
+			Edge corresponding to the step that is taken.
+		"""
 		while True:
 			if len(self.queue) == 0:
 				return None
