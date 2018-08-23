@@ -173,9 +173,9 @@ class App:
 		for i in range(len(self.maze.slabs)):
 			for j in range(len(self.maze.slabs[i])):
 				if self.maze.slabs[i][j]:
-					x_i = j / len(maze) * maze_length + offset
-					x_f = (j+1) / len(maze) * maze_length + offset
-					y_i = i / len(maze) * maze_length + offset
+					x_i = j / len(self.maze) * maze_length + offset
+					x_f = (j+1) / len(self.maze) * maze_length + offset
+					y_i = i / len(self.maze) * maze_length + offset
 					y_f = y_i
 					self.drawing.create_line(x_i,y_i, x_f,y_f,
 											 fill=default_color,
@@ -184,10 +184,10 @@ class App:
 		for i in range(len(self.maze.columns)):
 			for j in range(len(self.maze.columns[i])):
 				if self.maze.columns[i][j]:
-					x_i = i / len(maze)  * maze_length + offset
+					x_i = i / len(self.maze)  * maze_length + offset
 					x_f = x_i
-					y_i = j / len(maze) * maze_length + offset
-					y_f = (j+1) / len(maze) * maze_length + offset
+					y_i = j / len(self.maze) * maze_length + offset
+					y_f = (j+1) / len(self.maze) * maze_length + offset
 					self.drawing.create_line(x_i,y_i, x_f,y_f,
 											 fill=default_color,
 											 width=3)
@@ -221,13 +221,13 @@ class App:
 		elif text == 'prims algorithm':
 			algorithm = PrimsAlgorithmMazeGenerator(self.maze)
 
-		maze_window, drawing = make_maze_display(self.frame)
+		self.maze_window, self.drawing = make_maze_display(self.frame)
 
 		move = algorithm.step()
 
 		while move is not None:
 			if animating:
-				self.draw_move(move, drawing)
+				self.draw_move(move)
 			move = algorithm.step()
 			if animating:
 				pause(self.root, sleep_time)
@@ -235,7 +235,7 @@ class App:
 		if not animating:
 			self.draw_whole_maze()
 
-	def draw_move(self, move, drawing):
+	def draw_move(self, move):
 		"""
 		Draw a move on a drawing.
 
@@ -243,10 +243,10 @@ class App:
 			move (Edge) -- The edge to be drawn
 			drawing (tk.Toplevel) -- The canvas to be drawn on.
 		"""
-		clear_out_cell(move.first, len(self.maze), drawing)
+		clear_out_cell(move.first, len(self.maze), self.drawing)
 		remove_wall(move.first, move.get_direction(), len(self.maze),
-					drawing)
-		clear_out_cell(move.second, len(self.maze), drawing)
+					self.drawing)
+		clear_out_cell(move.second, len(self.maze), self.drawing)
 
 
 def make_maze_display(frame):

@@ -564,8 +564,8 @@ class PrimsAlgorithmMazeGenerator(MGAlgorithm):
 
 		self.create_weighted_edges = lambda pos : \
 			[Edge(pos, pos.move_to(direction), random_int(max))
-			 for direction in find_unvisited_neighbors(pos,
-													   self.visited)]
+			 for direction in find_unvisited_neighbors(
+                                                pos, self.visited)]
 
 		self.visited[self.start.x][self.start.y] = True
 		self.queue.insert(self.create_weighted_edges(self.start))
