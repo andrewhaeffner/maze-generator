@@ -1,4 +1,4 @@
-""""""
+"""Maze Generation program. Call main() to run it."""
 import tkinter as tk
 import tkinter.font as tkFont
 import sys
@@ -42,7 +42,18 @@ algorithm_options = [ # be careful with how these are spelled.
 item_count = 0
 
 class Button(tk.Button):
+	"""An abstraction of tk.Button"""
+
 	def __init__(self, master, f, t, c):
+		"""
+		Initialize Button.
+
+		Args:
+			master (tk.Frame) -- The root frame of the button.
+			f (tkFont.Font) -- The desired font for the button.
+			t (str) -- The desired text for the button.
+			c (function) -- The command called upon button's press.
+		"""
 		global item_count
 		super().__init__(master, font=f, text=t, command=c)
 		self.config(height=button_height, width=button_width)
@@ -50,6 +61,17 @@ class Button(tk.Button):
 		item_count += 1
 
 def create_text_entry(master, f, t, default_text):
+	"""
+	Create a label and text entry.
+
+	Args:
+		f (tkFont.Font) -- The desired font for the label&entry.
+		t (str) -- The desired text for the label.
+		default_text (str) -- The starting text for the entry.
+
+	Returns:
+		(tk.Label, tk.Entry) that have the desired properties.
+	"""
 	global item_count
 	label = tk.Label(master, font=f, text=t)
 	label.config(height=button_height, width=button_width)
@@ -63,6 +85,17 @@ def create_text_entry(master, f, t, default_text):
 	return label, entry
 
 def create_dropdown_menu(master, f, label_text, options):
+	"""
+	Args:
+		f (tkFont.Font) -- The desired font for the label&entry.
+		label_text (str) -- The text that will be shown on the label.
+		options (list) -- The options to be displayed in the menu.
+
+	Returns:
+		(tk.OptionMenu, tk.StringVar, tk.Label) that have the desired
+		properties.
+
+	"""
 	global item_count
 	label = tk.Label(master, font=f, text=label_text)
 	label.config(height=button_height, width=button_width)
@@ -79,7 +112,15 @@ def create_dropdown_menu(master, f, label_text, options):
 	return menu, var, label
 
 class App:
+	"""Main application class."""
+
 	def __init__(self, master):
+		"""
+		Initialize App.
+
+		Args:
+			master (tk.Tk) -- The root for the App Frame.
+		"""
 		self.frame = tk.Frame(master)
 		self.frame.grid()
 		self.root = master
@@ -123,6 +164,7 @@ class App:
 		self.maze = None
 
 	def draw_whole_maze(self):
+		"""Draws entire maze in one go."""
 		self.drawing.create_rectangle(offset,offset,
 									  window_width+offset,
 									  window_height+offset,
@@ -152,6 +194,7 @@ class App:
 
 
 	def generate_and_animate_maze(self):
+		"""Generates and animates maze in real time."""
 		# limit maze size.
 		maze_size = int(self.maze_size_entry.get()) % max_size
 		self.maze = Maze(maze_size) # build a default maze.
@@ -178,7 +221,7 @@ class App:
 		elif text == 'prims algorithm':
 			algorithm = PrimsAlgorithmMazeGenerator(self.maze)
 
-		maze_window, drawing = make_maze_display(self.frame, self.root)
+		maze_window, drawing = make_maze_display(self.frame)
 
 		move = algorithm.step()
 
@@ -193,13 +236,30 @@ class App:
 			self.draw_whole_maze()
 
 	def draw_move(self, move, drawing):
-		clear_out_cell(move.first, self.maze.size, drawing)
-		remove_wall(move.first, move.get_direction(), self.maze.size,
+		"""
+		Draw a move on a drawing.
+
+		Args:
+			move (Edge) -- The edge to be drawn
+			drawing (tk.Toplevel) -- The canvas to be drawn on.
+		"""
+		clear_out_cell(move.first, len(maze), drawing)
+		remove_wall(move.first, move.get_direction(), len(maze),
 					drawing)
-		clear_out_cell(move.second, self.maze.size, drawing)
+		clear_out_cell(move.second, len(maze), drawing)
 
 
-def make_maze_display(frame, root):
+def make_maze_display(frame):
+	"""
+	Create a display for a maze.
+
+	Args:
+		frame (tk.Frame) -- The frame the maze will be drawn on.
+
+	Returns:
+		(tk.Toplevel, tk.Canvas) that are the window and drawing
+		objects to be used for the new maze animation.
+	"""
 	maze_window = tk.Toplevel(frame)
 	maze_window.grid()
 
@@ -219,6 +279,14 @@ def make_maze_display(frame, root):
 	return maze_window, drawing
 
 def clear_out_cell(position, size, drawing):
+	"""
+	Draws out a square in the desired position on the drawing.
+
+	Args:
+		position (Node) -- Indicates cell to be drawn out.
+		size (int) -- The pixel side length of the maze.
+		drawing (tk.Canvas) -- The object to be drawn upon.
+	"""
 	x = position[0]
 	y = position[1]
 
@@ -231,7 +299,16 @@ def clear_out_cell(position, size, drawing):
 	drawing.create_rectangle(x_i,y_i, x_f,y_f, fill=blank_color,
 							 outline=blank_color)
 
-def remove_wall(position, move, size, drawing):
+def remove_wall(position, move, size, drawing): # TODO: change to Edge?
+	"""
+	Removes a wall in the desired location on a drawing.
+
+	Args:
+		position (Edge) -- Indicates central cell for the wall.
+		move (str) -- Indicate the direction in which the wall is.
+		size (int) -- The pixel side length of the maze.
+		drawing (tk.Canvas) -- The object to be drawn upon.
+	"""
 	x = position[0]
 	y = position[1]
 	if move == 'N':
@@ -260,10 +337,18 @@ def remove_wall(position, move, size, drawing):
 	if move == 'E': remove_wall((x+1,y), 'W', size, drawing)
 
 def pause(root, t):
+	"""
+	Pause the app for t seconds.
+
+	Args:
+		root (tk.Tk) -- The root of the application.
+		t (int) -- The amount of time to sleep for.
+	"""
 	root.update()
 	sleep(t)
 
 def main():
+	"""main function for the app."""
 	root = tk.Tk()
 	root.wm_title('Maze Generation Application')
 	root.bind('<Control-q>', quit)
